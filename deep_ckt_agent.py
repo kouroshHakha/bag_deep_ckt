@@ -481,7 +481,7 @@ def main():
         with open(db_dir+'/init_data.pickle', 'rb') as f:
             db = pickle.load(f)
     else:
-        db = eval_core.generate_data_set(args.n_init_samples, evaluate=True)
+        db = eval_core.generate_data_set(args.n_init_samples)
         with open(db_dir+'/init_data.pickle', 'wb') as f:
             pickle.dump(db, f)
 
