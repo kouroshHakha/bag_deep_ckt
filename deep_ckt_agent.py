@@ -7,9 +7,9 @@ import importlib
 import os
 import pickle
 import time
+import yaml
 
 import es as es
-from bag.io import read_yaml
 from util import *
 
 np.random.seed(10)
@@ -464,7 +464,8 @@ def main():
 
     args = parser.parse_args()
 
-    content = read_yaml(args.design_specs_fname)
+    with open(args.design_specs_fname, 'r') as f:
+        content = yaml.load(f)
 
     # setup database directory
     db_dir = content['database_dir']
