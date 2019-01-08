@@ -1,5 +1,5 @@
 database_dir: "bag_deep_ckt/checkpoint/db/two_stage_opamp_ngspice"
-eval_core_package: "bag_deep_ckt.eval_engines.NGspice.ngspiceEvalEngine"
+eval_core_package: "eval_engines.NGspice.ngspiceEvalEngine"
 eval_core_class: "NgspiceEvaluationCore"
 measurement:
   measurement_module: "eval_engines.NGspice.TwoStageComplete"

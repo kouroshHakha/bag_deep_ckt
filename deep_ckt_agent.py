@@ -8,9 +8,9 @@ import os
 import pickle
 import time
 
-import bag_deep_ckt.es as es
+import es as es
 from bag.io import read_yaml
-from bag_deep_ckt.util import *
+from util import *
 
 np.random.seed(10)
 random.seed(10)

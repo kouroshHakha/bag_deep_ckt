@@ -21,7 +21,7 @@ if __name__ == '__main__':
     cur_fpath = os.path.realpath(__file__)
     parent_path = os.path.abspath(os.path.join(cur_fpath, os.pardir))
     netlist_path = os.path.join(parent_path, 'netlist')
-    spice_model = os.path.join(parent_path, 'spice_models/45nm_bulk')
+    spice_model = os.path.join(parent_path, 'spice_models/45nm_bulk.txt')
 
     for root, dirs, files in os.walk(netlist_path):
         for f in files:
