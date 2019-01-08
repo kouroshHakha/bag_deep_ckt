@@ -1,5 +1,5 @@
 import os
-from bag_deep_ckt.util import *
+from util import *
 import abc
 import yaml
 from eval_engines.NGspice.TwoStageComplete import TwoStageMeasManager
