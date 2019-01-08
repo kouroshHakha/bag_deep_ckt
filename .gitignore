@@ -1,0 +1,41 @@
+# python/IDE files
+*.pyc
+__pycache__
+.idea
+
+# misc edit/log files
+*~
+*.log
+*.log.*
+IPOPT.out
+
+# misc BAG files
+BAG_server_port.txt
+BAG_sim_server_port.txt
+
+# misc configuration/history files
+.ipython
+.jupyter
+
+# generated files/directories
+calibre_run
+gen_libs
+pvs_run
+cds.lib
+data
+bag_libs.def
+
+# cadence files
+.cadence
+*.cdslck*
+.calibreviewsetup
+.tmp_*
+core.*
+
+# calibre files
+.cgidrcdb
+.cgilvsdb
+.cgipexdb
+calibreview.setup
+
+# pvs files
