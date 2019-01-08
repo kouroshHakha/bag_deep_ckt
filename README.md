@@ -8,3 +8,4 @@ python correct_inputs.py
 
 This will make all the netlist files point to the correct 45nm model file which is located in eval_engines/NGspice/ngspice_inputs/spice_models/45nm_bulk.txt
 
+make sure in the yaml file, the .cir files are pointing to the correct files.
