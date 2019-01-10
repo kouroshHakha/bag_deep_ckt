@@ -410,7 +410,7 @@ class DeepCktAgent(object):
                     offsprings.append(new_design)
 
         if (len(offsprings) < self.n_new_samples):
-            return [], True
+            return offsprings, True
 
         print(30*"-")
         design_results = self.eval_core.evaluate(offsprings)
@@ -453,7 +453,7 @@ def main():
     parser.add_argument('--n_init_samples', '-n', type=int, default=80,
                         help='if init_data is given n random ones are picked from it ,'
                              ' if not, eval_core will generate and evaluate n samples, at the beginning')
-    parser.add_argument('--max_iter', type=int, default=200000,
+    parser.add_argument('--max_iter', type=int, default=50000,
                         help='max number of iterations that we call nn prediction on offsprings')
     parser.add_argument('--evict_old_data', '-eod', type=bool, default=False,
                         help='A variant of algorithm that will evict old data from training dataset and keeps the'
@@ -486,6 +486,7 @@ def main():
             pickle.dump(db, f)
 
 
+    set_random_seed(10)
     # check len(db)
     db = clean(db)
     # check len(db): it should be the same, since no invalid design is in db anymore
@@ -509,22 +510,20 @@ def main():
         k_top=len(db)-1,
         ref_dsn_idx=args.ref_dsn_idx,
         max_data_set_size=600,
-        num_epochs=100,
+        num_epochs=10,
         batch_size=64,
-        display_step=25,
-        ckpt_step=25,
+        display_step=10,
+        ckpt_step=100,
         size=20,
         learning_rate=0.001,
     )
 
     agent.build_computation_graph()
     agent.init_tf_sess()
-    set_random_seed(10)
 
 
     data_set_list = []
     data_set_list.append(db)
-
     agent.train(db)
     for i in range(args.max_n_retraining):
         pop_dict = find_pop(db, k=n_init_samples, spec_range=eval_core.spec_range)
