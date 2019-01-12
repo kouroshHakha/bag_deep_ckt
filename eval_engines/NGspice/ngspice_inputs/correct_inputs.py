@@ -8,7 +8,7 @@ def update_file(fname, path_to_model):
 
     for line_num, line in enumerate(lines):
         if '.include' in line:
-            regex = re.compile("\.include\s*\"(.*?)\"")
+            regex = re.compile("\.include\s*\"(.*?45nm\_bulk\.txt)\"")
             found = regex.search(line)
             if found:
                 lines[line_num] = lines[line_num].replace(found.group(1), path_to_model)

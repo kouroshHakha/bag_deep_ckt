@@ -284,9 +284,10 @@ class TwoStageMeasManager(object):
         for i, key in enumerate(self.params_vec.keys()):
             state_dict[key] = self.params_vec[key][design[i]]
         state = [state_dict]
+        dsn_names = [design.id]
         results = {}
         for netlist_name, netlist_module in self.netlist_module_dict.items():
-            results[netlist_name] = netlist_module.run(state)
+            results[netlist_name] = netlist_module.run(state, dsn_names)
 
         specs_dict = self._get_specs(results)
         specs_dict['cost'] = self.cost_fun(specs_dict)

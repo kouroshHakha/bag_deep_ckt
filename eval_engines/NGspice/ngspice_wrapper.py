@@ -40,8 +40,7 @@ class NgSpiceWrapper(object):
             fname += "_" + str(value)
         return fname
 
-    def create_design(self, state):
-        new_fname = self.get_design_name(state)
+    def create_design(self, state, new_fname):
         design_folder = os.path.join(self.gen_dir, new_fname)
         os.makedirs(design_folder, exist_ok=True)
 
@@ -92,29 +91,33 @@ class NgSpiceWrapper(object):
         return info
 
 
-    def create_design_and_simulate(self, state, verbose=False):
+    def create_design_and_simulate(self, state, dsn_name=None, verbose=False):
         if debug:
             print('state', state)
             print('verbose', verbose)
-        dsn_name = self.get_design_name(state)
+        if dsn_name == None:
+            dsn_name = self.get_design_name(state)
+        else:
+            dsn_name = str(dsn_name)
         if verbose:
             print(dsn_name)
-        design_folder, fpath = self.create_design(state)
+        design_folder, fpath = self.create_design(state, dsn_name)
         info = self.simulate(fpath)
         specs = self.translate_result(design_folder)
         return state, specs, info
 
 
-    def run(self, states, verbose=False):
+    def run(self, states, design_names=None, verbose=False):
         """
 
         :param states:
-        verbose: If True it will print the design name that was created
+        :param design_names: if None default design name will be used, otherwise the given design name will be used
+        :param verbose: If True it will print the design name that was created
         :return:
             results = [(state: dict(param_kwds, param_value), specs: dict(spec_kwds, spec_value), info: int)]
         """
         pool = ThreadPool(processes=self.num_process)
-        arg_list = [(state, verbose) for state in states]
+        arg_list = [(state, dsn_name, verbose) for (state, dsn_name)in zip(states, design_names)]
         specs = pool.starmap(self.create_design_and_simulate, arg_list)
         pool.close()
         return specs
