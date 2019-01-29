@@ -73,7 +73,7 @@ if __name__ == '__main__':
     random.seed(10)
 
     start = time.time()
-    sample_designs = evalEngine.generate_data_set(n=80, evaluate=True)
+    sample_designs = evalEngine.generate_data_set(n=1, evaluate=True)
     print("time: {}".format(time.time() - start))
     os.makedirs(dir, exist_ok=True)
     with open(dir+"/init_data.pickle", 'wb') as f:

@@ -11,86 +11,6 @@ class OpampEvaluationEngine(BagEvalEngine):
         BagEvalEngine.__init__(self, design_specs_fname)
         self.ver_specs['measurements'][0]['find_cfb'] = False
 
-    # def generate_data_set(self, n=1, evaluate=False):
-    #
-    #     designs = []
-    #
-    #     for _ in range(n):
-    #         design = {}
-    #         for key, value in self.params.items():
-    #             rand_idx = random.randrange(len(self.params_vec[key]))
-    #             # rand_value = self.params_vec[key][rand_idx]
-    #             rand_value = rand_idx
-    #             design[key] = rand_value
-    #         # Imposing the constraints of layout generator
-    #         design['tail1'] = design['in']
-    #         design = Design(self.spec_range, list(design.values()))
-    #         designs.append(design)
-    #
-    #     if evaluate:
-    #         design_results = self.evaluate(designs)
-    #         for i, design in enumerate(designs):
-    #             design_result = design_results[i]
-    #             if design_result['valid']:
-    #                 design.cost = design_result['cost']
-    #                 for key in design.specs.keys():
-    #                     design.specs[key] = design_result[key]
-    #     return designs
-
-
-    # def generate_and_sim(self):
-    #     """
-    #     phase 1 of evaluation is generation of layout, schematic, LVS and RCX
-    #     If any of LVS or RCX fail results_ph1 will contain Exceptions for the corresponding instance
-    #     We proceed to phase 2 only if phase 1 was successful.
-    #     phase 2 is running the simulation with post extracted netlist view
-    #     Then we aggregate the results of phase 1 and phase 2 in a single list, in the same order
-    #     that designs were ordered, if phase 1 was failed the corresponding entry will contain
-    #     a Phase1Error exception
-    #     """
-    #     results = []
-    #     with open_file(self.sim_specs_fname, 'w') as f:
-    #         yaml.dump(self.ver_specs, f)
-    #
-    #     sim = DesignManager(self.bprj, self.sim_specs_fname)
-    #     results_ph1 = sim.characterize_designs(generate=True, measure=False, load_from_file=False)
-    #
-    #     # hacky: do parallel measurements, you should not sweep anything other than 'swp_spec_file' in sweep_params
-    #     # the new yaml files themselves should not include any sweep_param
-    #     start = time.time()
-    #     impl_lib = self.ver_specs['impl_lib']
-    #     coro_list = []
-    #     file_list = self.ver_specs['sweep_params']['swp_spec_file']
-    #     for i, combo_list in enumerate(sim.get_combinations_iter()):
-    #         dsn_name = sim.get_design_name(combo_list)
-    #         specs_fname = os.path.join(self.swp_spec_dir, file_list[i] + '.yaml')
-    #         if isinstance(results_ph1[i], Exception):
-    #             continue
-    #         coro_list.append(self.async_characterization(impl_lib, dsn_name, specs_fname))
-    #
-    #     results_ph2 = batch_async_task(coro_list)
-    #     print("sim time: {}".format(time.time() - start))
-    #     # this part returns the correct order of results if some of the instances failed phase1 of evaluation
-    #     j = 0
-    #     for i, combo_list in enumerate(sim.get_combinations_iter()):
-    #         if isinstance(results_ph1[i], Exception):
-    #             results.append(Phase1Error)
-    #         else:
-    #             results.append(results_ph2[j])
-    #             j+=1
-    #     pprint.pprint(results)
-    #
-    #     return results
-    #
-    # async def async_characterization(self, impl_lib, dsn_name, specs_fname):
-    #     sim = DesignManager(self.bprj, specs_fname)
-    #     pprint.pprint(specs_fname)
-    #     await sim.verify_design(impl_lib, dsn_name, load_from_file=False)
-    #     # print('name: {}'.format(dsn_name))
-    #     # dsn_name = list(sim.get_dsn_name_iter())[0]
-    #     summary = sim.get_result(dsn_name)['opamp_ac']
-    #     return summary
-
     def impose_constraints(self, design_dict):
         design_dict['layout_params/seg_dict/tail1'] = design_dict['layout_params/seg_dict/in']
         return design_dict
@@ -202,7 +122,7 @@ def main():
     random.seed(10)
 
     start = time.time()
-    sample_designs = eval_core.generate_data_set(n=10, evaluate=True)
+    sample_designs = eval_core.generate_data_set(n=1, evaluate=True)
     print("time for simulating one instance: {}".format((time.time() - start)))
 
     import pickle

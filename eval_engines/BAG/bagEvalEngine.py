@@ -6,7 +6,7 @@ import time
 
 from bag.io import read_yaml, open_file
 from bag.core import BagProject
-from bag.simulation.core import DesignManager
+from eval_engines.BAG.DeepCKTDesignManager import DeepCKTDesignManager
 from bag.concurrent.core import batch_async_task
 
 import os
@@ -130,9 +130,13 @@ class BagEvalEngine(object, metaclass=abc.ABCMeta):
         list_of_unmerged_keys = str.split(merged_keys, "/")
         return list_of_unmerged_keys
 
-    def decend(self, keys):
+    def decend(self, keys, step=1):
+        assert step >= 1, "step should be greater or equal to 1"
         um = self.unmerge_keys(keys)
-        return self.merge_keys(um[1:])
+        new_key = self.merge_keys(um[1:])
+        if step == 1:
+            return new_key
+        return self.decend(new_key, step=step-1)
 
     def update_with_unmerged_key(self, main_dict, keys, value):
         """
@@ -173,7 +177,7 @@ class BagEvalEngine(object, metaclass=abc.ABCMeta):
                     rand_value = rand_idx
                     design[key] = rand_value
                 # Imposing the constraints of layout generator
-                design = self.impose_constraints(design)
+                # design = self.impose_constraints(design)
                 design = Design(self.spec_range, self.id_encoder, list(design.values()))
                 if design in tried_designs:
                     if (useless_iter_count > n_cpus * 10):
@@ -211,20 +215,25 @@ class BagEvalEngine(object, metaclass=abc.ABCMeta):
             measurement_update = specs['measurements'][0]
             params_dict = dict(zip(self.params_vec.keys(), design))
             # imposing the constraint of layout generator
+            # TODO: impose constraints on real values instead of indexed values
+            for key, value_idx in params_dict.items():
+                params_dict[key] = self.params_vec[key][value_idx]
             self.impose_constraints(params_dict)
 
             # TODO: Still cannot handle multiple measurement manager units
-            for key, value_idx in params_dict.items():
+            for key, value in params_dict.items():
                 next_key = self.decend(key)
                 if next_key in self.param_choices_layout.keys():
-                    self.update_with_unmerged_key(layout_update, next_key, self.params_vec[key][value_idx])
+                    self.update_with_unmerged_key(layout_update, next_key, value)
                 elif next_key in self.param_choices_measurement.keys():
-                    self.update_with_unmerged_key(measurement_update, next_key, self.params_vec[key][value_idx])
+                    self.update_with_unmerged_key(measurement_update, next_key, value)
 
             specs['sweep_params']['swp_spec_file'] = ['params_'+str(design.id)]
 
             swp_spec_file_list.append('params_'+str(design.id))
             fname = os.path.join(self.swp_spec_dir, 'params_'+str(design.id)+'.yaml')
+            import pdb
+            pdb.set_trace()
             with open_file(fname, 'w') as f:
                 yaml.dump(specs, f)
 
@@ -247,7 +256,7 @@ class BagEvalEngine(object, metaclass=abc.ABCMeta):
         with open_file(self.sim_specs_fname, 'w') as f:
             yaml.dump(self.ver_specs, f)
 
-        sim = DesignManager(self.bprj, self.sim_specs_fname)
+        sim = DeepCKTDesignManager(self.bprj, self.sim_specs_fname)
         results_ph1 = sim.characterize_designs(generate=True, measure=False, load_from_file=False)
         # hacky: do parallel measurements, you should not sweep anything other than 'swp_spec_file' in sweep_params
         # the new yaml files themselves should not include any sweep_param
@@ -277,7 +286,7 @@ class BagEvalEngine(object, metaclass=abc.ABCMeta):
         return results
 
     async def async_characterization(self, impl_lib, dsn_name, specs_fname):
-        sim = DesignManager(self.bprj, specs_fname)
+        sim = DeepCKTDesignManager(self.bprj, specs_fname)
         pprint.pprint(specs_fname)
         await sim.verify_design(impl_lib, dsn_name, load_from_file=False)
         # just copy the corresponding yaml file, so that everything is in one place
@@ -314,3 +323,30 @@ class BagEvalEngine(object, metaclass=abc.ABCMeta):
         cost and spec keywords with one scalar number as the value for each
         """
         raise NotImplementedError
+
+    # helper (optional) functions for process_results
+    def find_worst(self, spec_nums, spec_kwrd):
+        if type(spec_nums) is not list:
+            spec_nums = [spec_nums]
+
+        spec_min, spec_max = self.spec_range[spec_kwrd]
+        if spec_min is not None:
+            return min(spec_nums)
+        if spec_max is not None:
+            return max(spec_nums)
+
+    def compute_penalty(self, spec_nums, spec_kwrd):
+        if type(spec_nums) is not list:
+            spec_nums = [spec_nums]
+        penalties = []
+        for spec_num in spec_nums:
+            penalty = 0
+            spec_min, spec_max = self.spec_range[spec_kwrd]
+            if spec_max is not None:
+                if spec_num > spec_max:
+                    penalty += abs((spec_num - spec_max) / (spec_num + spec_max))
+            if spec_min is not None:
+                if spec_num < spec_min:
+                    penalty += abs((spec_num - spec_min) / (spec_num + spec_min))
+            penalties.append(penalty)
+        return penalties
