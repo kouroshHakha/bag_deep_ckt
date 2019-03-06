@@ -17,6 +17,8 @@ def select_parents_from_two_pops(parents1, parents2):
     return ind1, ind2
 
 def gen_children_from_two_pops(parents1, parents2, eval_core):
+    # parent 1: good in everything but the critical spec
+    # parent 2: good only in critical spec
     if len(parents1) == 0:
         parents1 = parents2
     assert (G.cxpb + G.mutpb) <= 1.0, (

@@ -26,9 +26,8 @@ def find_pop(db, k, spec_range):
     assert k <= len(db), "k={} is not less that len(db)={}".format(k, len(db))
     pop = {}
     pop['cost'] = sorted(db, key=lambda x: x.cost)[:k]
-
     for kwrd in spec_range.keys():
-        spec_min, spec_max = spec_range[kwrd]
+        spec_min, spec_max, _ = spec_range[kwrd]
         reverse = True if spec_min is not None else False
         pop[kwrd] = sorted(db, key=lambda x: x.specs[kwrd], reverse=reverse)[:k]
 
@@ -73,7 +72,7 @@ def find_critic_spec(eval_core, db, spec_range, critical_specs, ref_idx=20, k=20
     how to imporve that spec the results are going to get better faster.
     """
     for spec_kwrd in spec_range:
-        spec_min, spec_max = spec_range[spec_kwrd]
+        spec_min, spec_max, _ = spec_range[spec_kwrd]
         if spec_min is not None:
             worst_specs[spec_kwrd] = np.min([ind.specs[spec_kwrd] for ind in pop[:ref_idx]])
         elif spec_max is not None:
@@ -121,7 +120,7 @@ class IDEncoder(object):
     # example: input = [1,2,3], bases = [10, 3, 8]
     # [10, 3, 8] -> [3x8, 8, 0]
     # [1, 2, 3] x [3x8, 8, 0] = [24, 16 , 0] -> 24+16+0 = 40
-    # 40 -> [k] in base 62 and then we pad it to [0,k] and then return '0k'
+    # 40 -> [k] in base 62 (0,...,9,a,...,z,A,....,Z) and then we pad it to [0,k] and then return '0k'
 
     def __init__(self, params_vec):
         self._bases = np.array([len(vec) for vec in params_vec.values()])
@@ -161,6 +160,7 @@ class IDEncoder(object):
             ret_list.insert(0, cur_multiplier)
             assert cur_multiplier < sys.float_info.max, 'search space too large, cannot be represented by this machine'
 
+        print(cur_multiplier)
         ret_list[:-1] = ret_list[1:]
         ret_list[-1] = 0
         return np.array(ret_list)
@@ -191,7 +191,6 @@ class IDEncoder(object):
         return ''.join(padded)
 
 class Design(list):
-
     def __init__(self, spec_range, id_encoder, seq=()):
         """
         :param spec_range: Dict[Str : [a,b]] -> kwrds are used for spec property creation of Design objects

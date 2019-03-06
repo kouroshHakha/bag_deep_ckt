@@ -31,7 +31,6 @@ class BagEvalEngine(object, metaclass=abc.ABCMeta):
         the template is given in ...
 
         """
-        print('creating BAG project')
         self.bprj = BagProject()
         self.design_specs_fname = design_specs_fname
         self.ver_specs = read_yaml(self.design_specs_fname)
@@ -58,6 +57,8 @@ class BagEvalEngine(object, metaclass=abc.ABCMeta):
                 self.search_space_size = self.search_space_size * len(self.params_vec[key])
 
         self.id_encoder = IDEncoder(self.params_vec)
+        self._unique_suffix = 0
+        self.temp_db = None
 
     @property
     def num_params(self):
@@ -133,6 +134,8 @@ class BagEvalEngine(object, metaclass=abc.ABCMeta):
     def decend(self, keys, step=1):
         assert step >= 1, "step should be greater or equal to 1"
         um = self.unmerge_keys(keys)
+        if len(um) == 1:
+            return um[0]
         new_key = self.merge_keys(um[1:])
         if step == 1:
             return new_key
@@ -163,44 +166,51 @@ class BagEvalEngine(object, metaclass=abc.ABCMeta):
         valid_designs = []
         # all designs that we are about to evaluate, the length of this list should be less than the number of cpus
 
-        n_cpus = multiprocessing.cpu_count()
-        n_cpus = min([n_cpus, n])
+        # n_cpus = multiprocessing.cpu_count()
+        # n_cpus = min([n_cpus, n])
         # for _ in range(n):
-        while (len(valid_designs) <= n):
+        remaining = n
+        while (remaining != 0):
             trying_designs = []
             useless_iter_count = 0
-            while (len(trying_designs) <= n_cpus):
+            while (len(trying_designs) < remaining):
                 design = {}
                 for key, vec in self.params_vec.items():
                     rand_idx = random.randrange(len(vec))
                     # rand_value = self.params_vec[key][rand_idx]
                     rand_value = rand_idx
                     design[key] = rand_value
-                # Imposing the constraints of layout generator
-                # design = self.impose_constraints(design)
+
                 design = Design(self.spec_range, self.id_encoder, list(design.values()))
-                if design in tried_designs:
-                    if (useless_iter_count > n_cpus * 10):
+                if design in tried_designs or design in trying_designs:
+                    useless_iter_count += 1
+                    if (useless_iter_count > n * 10):
                         raise ValueError("Random selection of a fraction of search space did not result in {}"
                                          "number of valid designs".format(n))
-                    useless_iter_count += 1
                     continue
-                tried_designs.append(design)
                 trying_designs.append(design)
 
             if evaluate:
                 design_results = self.evaluate(trying_designs)
+                n_valid = 0
                 for design, design_result in zip(trying_designs, design_results):
+                    tried_designs.append(design)
                     if design_result['valid']:
+                        n_valid += 1
                         design.cost = design_result['cost']
                         for key in design.specs.keys():
                             design.specs[key] = design_result[key]
                         valid_designs.append(design)
 
+                remaining = remaining - n_valid
+
+            else:
+                remaining = remaining - len(trying_designs)
+
         generator_efficiency = len(valid_designs) / len(tried_designs)
         print("Genrator Efficiency: {}".format(generator_efficiency))
         print("avg time for simulating one instance: {}".format((time.time() - start)/len(tried_designs)))
-        return valid_designs[:n]
+        return valid_designs
 
     def evaluate(self, design_list):
         # type: (List[Design]) -> List
@@ -215,7 +225,6 @@ class BagEvalEngine(object, metaclass=abc.ABCMeta):
             measurement_update = specs['measurements'][0]
             params_dict = dict(zip(self.params_vec.keys(), design))
             # imposing the constraint of layout generator
-            # TODO: impose constraints on real values instead of indexed values
             for key, value_idx in params_dict.items():
                 params_dict[key] = self.params_vec[key][value_idx]
             self.impose_constraints(params_dict)
@@ -232,8 +241,8 @@ class BagEvalEngine(object, metaclass=abc.ABCMeta):
 
             swp_spec_file_list.append('params_'+str(design.id))
             fname = os.path.join(self.swp_spec_dir, 'params_'+str(design.id)+'.yaml')
-            import pdb
-            pdb.set_trace()
+            # import pdb
+            # pdb.set_trace()
             with open_file(fname, 'w') as f:
                 yaml.dump(specs, f)
 
@@ -257,6 +266,9 @@ class BagEvalEngine(object, metaclass=abc.ABCMeta):
             yaml.dump(self.ver_specs, f)
 
         sim = DeepCKTDesignManager(self.bprj, self.sim_specs_fname)
+        if self.temp_db is None:
+            self.temp_db = sim.make_tdb()
+        sim.set_tdb(self.temp_db)
         results_ph1 = sim.characterize_designs(generate=True, measure=False, load_from_file=False)
         # hacky: do parallel measurements, you should not sweep anything other than 'swp_spec_file' in sweep_params
         # the new yaml files themselves should not include any sweep_param
@@ -281,7 +293,7 @@ class BagEvalEngine(object, metaclass=abc.ABCMeta):
             else:
                 results.append(results_ph2[ph2_iter_index])
                 ph2_iter_index+=1
-        pprint.pprint(results)
+        # pprint.pprint(results)
 
         return results
 
@@ -324,16 +336,21 @@ class BagEvalEngine(object, metaclass=abc.ABCMeta):
         """
         raise NotImplementedError
 
-    # helper (optional) functions for process_results
+    def get_unique_suffix(self):
+        self._unique_suffix += 1
+        return '_'+str(self._unique_suffix)
+    ###############################################################
+    #######  helper (optional) functions for process_results ######
+    ###############################################################
     def find_worst(self, spec_nums, spec_kwrd):
-        if type(spec_nums) is not list:
+        if not hasattr(spec_nums, '__iter__'):
             spec_nums = [spec_nums]
 
-        spec_min, spec_max = self.spec_range[spec_kwrd]
+        spec_min, spec_max, _ = self.spec_range[spec_kwrd]
         if spec_min is not None:
-            return min(spec_nums)
+            return np.min(spec_nums)
         if spec_max is not None:
-            return max(spec_nums)
+            return np.max(spec_nums)
 
     def compute_penalty(self, spec_nums, spec_kwrd):
         if type(spec_nums) is not list:
@@ -341,12 +358,18 @@ class BagEvalEngine(object, metaclass=abc.ABCMeta):
         penalties = []
         for spec_num in spec_nums:
             penalty = 0
-            spec_min, spec_max = self.spec_range[spec_kwrd]
+            spec_min, spec_max, w = self.spec_range[spec_kwrd]
             if spec_max is not None:
                 if spec_num > spec_max:
-                    penalty += abs((spec_num - spec_max) / (spec_num + spec_max))
+                    if (spec_num + spec_max) != 0:
+                        penalty += w*abs((spec_num - spec_max) / (spec_num + spec_max))
+                    else:
+                        penalty += 1000
             if spec_min is not None:
                 if spec_num < spec_min:
-                    penalty += abs((spec_num - spec_min) / (spec_num + spec_min))
+                    if (spec_num + spec_min) != 0:
+                        penalty += w*abs((spec_num - spec_min) / (spec_num + spec_min))
+                    else:
+                        penalty += 1000
             penalties.append(penalty)
         return penalties
