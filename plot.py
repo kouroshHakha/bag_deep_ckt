@@ -4,10 +4,17 @@ import os
 import pickle
 import numpy as np
 import math
+import pdb
 
-def get_dataset(log_dir):
+def get_dataset(log_dir, time=False, old=True):
+    if time:
+        fname = '/db_time.pkl'
+    else:
+        fname = '/db.pkl'
+    if old:
+        fname = ''
 
-    with open(log_dir, 'rb') as f:
+    with open(log_dir + fname, 'rb') as f:
         return pickle.load(f)
 def plot_everything(data, legends):
     sns.set_style("darkgrid")
@@ -58,11 +65,10 @@ def plot_cost(data, legends):
                 print("solution found on iter: {} neval: {}".format(i, n_evals))
             db += offsprings
             db_sorted = sorted(db, key=lambda x: x.cost)
-            avg_cost = np.mean([x.cost for x in db_sorted[:10]])
+            avg_cost = np.mean([x.cost for x in db_sorted[:20]])
             min_cost = db_sorted[0].cost
             avg_to_plot.append(avg_cost)
             min_to_plot.append(min_cost)
-
 
         avg_plt_objects.append(ax.plot(avg_to_plot, label='avg_'+legend))
         min_plt_objects.append(ax.plot(min_to_plot, '--', label='min_'+legend))
@@ -87,6 +93,32 @@ def print_best_design(data, legends):
         # print("{}: {} -> {}".format(legend, best_sol, best_sol.specs))
 
 
+def plot_cost2(data, x_axis, legends):
+    ax = plt.gca()
+    avg_plt_objects = []
+    min_plt_objects = []
+    for exp, legend in zip(data, legends):
+        db = []
+        avg_to_plot = []
+        min_to_plot = []
+        n_evals = 0
+        for i, offsprings in enumerate(exp['db']):
+            n_evals += len(offsprings)
+            db += offsprings
+            db_sorted = sorted(db, key=lambda x: x.cost)
+            avg_cost = np.mean([x.cost for x in db_sorted[:20]])
+            min_cost = db_sorted[0].cost
+            avg_to_plot.append(avg_cost)
+            min_to_plot.append(min_cost)
+
+        avg_plt_objects.append(ax.plot(exp[x_axis], avg_to_plot, label='avg_'+legend))
+        # min_plt_objects.append(ax.plot(exp[x_axis], min_to_plot, '--', label='min_'+legend))
+
+    ax.legend()
+    ax.set_title('cost')
+    # ax.set_ylabel('cost')
+    ax.set_xlabel(x_axis)
+    plt.savefig("", dpi=200)
 
 if __name__ == '__main__':
     import argparse
@@ -97,10 +129,11 @@ if __name__ == '__main__':
 
     data = []
     for log_dir in args.logdir:
-        data.append(get_dataset(log_dir))
+        data.append(get_dataset(log_dir, False))
 
     plot_everything(data, args.legend)
     plot_cost(data, args.legend)
     # print_best_design(data, args.legend)
+    # plot_cost2(data, 'n_query', args.legend)
 
 
