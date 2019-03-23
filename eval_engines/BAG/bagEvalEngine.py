@@ -19,6 +19,7 @@ import multiprocessing
 from shutil import copyfile
 import IPython
 
+
 class Phase1Error(Exception):
     pass
 
@@ -36,10 +37,10 @@ class BagEvalEngine(object, metaclass=abc.ABCMeta):
         self.ver_specs = read_yaml(self.design_specs_fname)
 
         root_dir = self.ver_specs['root_dir']
-        self.swp_spec_dir = os.path.join(root_dir, 'gen_yamls')
-        self.sim_specs_fname = os.path.join(self.swp_spec_dir, self.ver_specs['sim_spec_fname'])
-        self.swp_spec_dir = os.path.join(self.swp_spec_dir, 'swp_spec_files')
-        os.makedirs(self.swp_spec_dir, exist_ok=True)
+        self.gen_yamls_dir = os.path.join(root_dir, 'gen_yamls')
+        self.top_level_main_file = os.path.join(self.gen_yamls_dir, self.ver_specs['sim_spec_fname'])
+        self.gen_yamls_dir = os.path.join(self.gen_yamls_dir, 'swp_spec_files')
+        os.makedirs(self.gen_yamls_dir, exist_ok=True)
 
         self.spec_range = self.ver_specs['spec_range']
         self.param_choices_layout = self.break_hierarchy(self.ver_specs['params']['layout_params'])
@@ -201,7 +202,6 @@ class BagEvalEngine(object, metaclass=abc.ABCMeta):
                         for key in design.specs.keys():
                             design.specs[key] = design_result[key]
                         valid_designs.append(design)
-
                 remaining = remaining - n_valid
 
             else:
@@ -240,9 +240,7 @@ class BagEvalEngine(object, metaclass=abc.ABCMeta):
             specs['sweep_params']['swp_spec_file'] = ['params_'+str(design.id)]
 
             swp_spec_file_list.append('params_'+str(design.id))
-            fname = os.path.join(self.swp_spec_dir, 'params_'+str(design.id)+'.yaml')
-            # import pdb
-            # pdb.set_trace()
+            fname = os.path.join(self.gen_yamls_dir, 'params_' + str(design.id) + '.yaml')
             with open_file(fname, 'w') as f:
                 yaml.dump(specs, f)
 
@@ -262,10 +260,10 @@ class BagEvalEngine(object, metaclass=abc.ABCMeta):
         a Phase1Error exception
         """
         results = []
-        with open_file(self.sim_specs_fname, 'w') as f:
+        with open_file(self.top_level_main_file, 'w') as f:
             yaml.dump(self.ver_specs, f)
 
-        sim = DeepCKTDesignManager(self.bprj, self.sim_specs_fname)
+        sim = DeepCKTDesignManager(self.bprj, self.top_level_main_file)
         if self.temp_db is None:
             self.temp_db = sim.make_tdb()
         sim.set_tdb(self.temp_db)
@@ -278,7 +276,7 @@ class BagEvalEngine(object, metaclass=abc.ABCMeta):
         file_list = self.ver_specs['sweep_params']['swp_spec_file']
         for ph1_iter_index, combo_list in enumerate(sim.get_combinations_iter()):
             dsn_name = sim.get_design_name(combo_list)
-            specs_fname = os.path.join(self.swp_spec_dir, file_list[ph1_iter_index] + '.yaml')
+            specs_fname = os.path.join(self.gen_yamls_dir, file_list[ph1_iter_index] + '.yaml')
             if isinstance(results_ph1[ph1_iter_index], Exception):
                 continue
             coro_list.append(self.async_characterization(impl_lib, dsn_name, specs_fname))
@@ -297,10 +295,10 @@ class BagEvalEngine(object, metaclass=abc.ABCMeta):
 
         return results
 
-    async def async_characterization(self, impl_lib, dsn_name, specs_fname):
+    async def async_characterization(self, impl_lib, dsn_name, specs_fname, load_from_file=False):
         sim = DeepCKTDesignManager(self.bprj, specs_fname)
         pprint.pprint(specs_fname)
-        await sim.verify_design(impl_lib, dsn_name, load_from_file=False)
+        await sim.verify_design(impl_lib, dsn_name, load_from_file=load_from_file)
         # just copy the corresponding yaml file, so that everything is in one place
         base_fname = os.path.basename(specs_fname)
         copyfile(specs_fname, os.path.join(sim._root_dir, dsn_name+'/'+base_fname))
