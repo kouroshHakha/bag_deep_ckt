@@ -2,6 +2,9 @@ import random
 import numpy as np
 from deap import tools
 import math
+from copy import deepcopy
+from util import Design
+import pdb
 
 #### modified version, compatible with multi objective optimization
 
@@ -31,14 +34,21 @@ def gen_children_from_two_pops(parents1, parents2, eval_core):
         lows.append(0)
         len_param_vec = math.floor((value[1]-value[0])/value[2])
         ups.append(len_param_vec-1)
-
     if op_choice <= G.cxpb:            # Apply crossover
         ind1, ind2 = select_parents_from_two_pops(parents1, parents2)
+        parent1 = deepcopy(ind1)
+        parent2 = deepcopy(ind2)
         ind1, ind2 = mate(ind1, ind2, low=lows, up=ups)
+        Design.genocide(ind1, ind2)
+        ind1.set_parents_and_sibling(parent1, parent2, ind2)
+        ind2.set_parents_and_sibling(parent1, parent2, ind1)
         offsprings += [ind1, ind2]
     elif op_choice < G.cxpb + G.mutpb:      # Apply mutation
         ind = select_for_mut_based_on_order(parents1)
+        parent1 = deepcopy(ind)
         ind, = mutate(ind, low=lows, up=ups)
+        Design.genocide(ind)
+        ind.set_parents_and_sibling(parent1, None, None)
         offsprings.append(ind)
     return offsprings
 
