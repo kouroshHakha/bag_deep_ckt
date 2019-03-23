@@ -4,7 +4,7 @@ import time
 from eval_engines.BAG.bagEvalEngine import BagEvalEngine
 from bag.io import read_yaml
 from bag_deep_ckt.util import *
-
+import pdb
 
 class OpampEvaluationEngine(BagEvalEngine):
     def __init__(self, design_specs_fname):
@@ -52,7 +52,7 @@ class OpampEvaluationEngine(BagEvalEngine):
         if type(spec_nums) is not list:
             spec_nums = [spec_nums]
 
-        spec_min, spec_max = self.spec_range[spec_kwrd]
+        spec_min, spec_max, _ = self.spec_range[spec_kwrd]
         if spec_min is not None:
             return min(spec_nums)
         if spec_max is not None:
@@ -64,15 +64,15 @@ class OpampEvaluationEngine(BagEvalEngine):
         penalties = []
         for spec_num in spec_nums:
             penalty = 0
-            spec_min, spec_max = self.spec_range[spec_kwrd]
+            spec_min, spec_max, w = self.spec_range[spec_kwrd]
             if spec_max is not None:
                 if spec_num > spec_max:
                     # penalty += abs(spec_num / spec_max - 1.0)
-                    penalty += abs((spec_num - spec_max) / (spec_num + spec_max))
+                    penalty += w*abs((spec_num - spec_max) / (spec_num + spec_max))
             if spec_min is not None:
                 if spec_num < spec_min:
                     # penalty += abs(spec_num / spec_min - 1.0)
-                    penalty += abs((spec_num - spec_min) / (spec_num + spec_min))
+                    penalty += w*abs((spec_num - spec_min) / (spec_num + spec_min))
             penalties.append(penalty)
         return penalties
 
@@ -125,13 +125,15 @@ def main():
     sample_designs = eval_core.generate_data_set(n=1, evaluate=True)
     print("time for simulating one instance: {}".format((time.time() - start)))
 
-    import pickle
-    with open(db_dir+"/init_data.pickle", 'wb') as f:
-        pickle.dump(sample_designs, f)
+    pdb.set_trace()
 
-    with open(db_dir+"/init_data.pickle", 'rb') as f:
-        data = pickle.load(f)
-        a=1/0
+    # import pickle
+    # with open(db_dir+"/init_data.pickle", 'wb') as f:
+    #     pickle.dump(sample_designs, f)
+    #
+    # with open(db_dir+"/init_data.pickle", 'rb') as f:
+    #     data = pickle.load(f)
+    #     a=1/0
 
     # designs = [[6, 6, 8, 8, 0, 3, 4, 8, 4, 31, 0]] # this design had a wierd phase behavior
     # designs = [[8, 6, 0, 8, 2, 0, 6, 7, 7, 21, 5]] # this design's funity for ff was nan
