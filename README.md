@@ -3,6 +3,8 @@ genetic and neural net optimization for circuit design
 
 NGspice:
 
+NGspice 27 should be installed on the system, this code was developed on a linux machine but also worked on macos.
+
 First thing that needs to be done is to go to eval_engines/NGspice/ngspice_inputs and run:
 python correct_inputs.py
 
