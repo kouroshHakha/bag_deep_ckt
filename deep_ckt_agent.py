@@ -11,9 +11,12 @@ import yaml
 
 import es as es
 from util import *
+import pdb
+import pprint
 
-np.random.seed(10)
-random.seed(10)
+
+np.random.seed(1)
+random.seed(1)
 
 
 class DeepCktAgent(object):
@@ -27,7 +30,7 @@ class DeepCktAgent(object):
                  num_classes=2,
                  valid_frac=0.2,
                  max_n_retraining=80,
-                 k_top=199,
+                 k_top=200,
                  ref_dsn_idx=20,
                  max_data_set_size=600,
                  num_epochs=100,
@@ -36,6 +39,7 @@ class DeepCktAgent(object):
                  ckpt_step=25,
                  size=20,
                  learning_rate=0.03,
+                 log_path = None
                  ):
 
         self.eval_core = eval_core
@@ -69,6 +73,29 @@ class DeepCktAgent(object):
         self.learning_rate = learning_rate
 
         self.critical_specs = []
+
+        # paper stuff variables
+        self.n_sims = 0
+        self.sim_time = 0
+        self.n_queries = 0
+        self.query_time = 0
+        self.n_training = 0
+        self.training_time = 0
+        self.total_time = 0
+
+        self.log_path = log_path
+        if log_path and os.path.exists(log_path):
+            os.remove(log_path)
+
+    def log_text(self, str, stream_to_file=True, stream_to_stdout=True, pretty=False):
+        if pretty:
+            printfn = pprint.pprint
+        else:
+            printfn = print
+        if stream_to_file:
+            printfn(str, file=open(self.log_path, 'a'))
+        if stream_to_stdout:
+            printfn(str)
 
     def init_tf_sess(self):
         tf_config = tf.ConfigProto(inter_op_parallelism_threads=1, intra_op_parallelism_threads=1)
@@ -193,9 +220,9 @@ class DeepCktAgent(object):
         # this bias on some level exists. For this reason we will sort the data set and produce pairs that always have at least
         # one design from top k_top designs.
 
-        assert self.k_top < len(train_set), "ktop={}, train_set_len={}".format(self.k_top, len(train_set))
+        assert self.k_top <= len(train_set), "ktop={}, train_set_len={}".format(self.k_top, len(train_set))
 
-        db_cost_sorted = sorted(train_set, key=lambda x: x.cost)[:self.k_top+1]
+        db_cost_sorted = sorted(train_set, key=lambda x: x.cost)[:self.k_top]
 
         category = {}
         nn_input1, nn_input2 = [], []
@@ -242,6 +269,9 @@ class DeepCktAgent(object):
         saver = tf.train.Saver(all_vars)
 
         nn_input1, nn_input2, nn_labels = self.combine(db)
+        self.log_text("[info] dataset size:%d" % len(db))
+        self.log_text("[info] ktop: %d" % self.k_top)
+        self.log_text("[info] combine size:%d" %len(nn_input1))
 
         permutation = np.random.permutation(len(nn_input1))
         nn_input1 = nn_input1[permutation]
@@ -266,19 +296,17 @@ class DeepCktAgent(object):
         # print(train_mean)
         # print(train_std)
 
-        print("[info] dataset size:%d" % len(db))
-        print("[info] combine size:%d" %(len(train_input1)+len(valid_input1)))
-        for kwrd in self.spec_list:
-            print("[info][%s] train_dataset: positive_samples/total ratio : %d/%d" %(kwrd, np.sum(train_labels[kwrd], axis=0)[0], train_labels[kwrd].shape[0]))
-            print("[info][%s] valid_dataset: positive_samples/total ratio : %d/%d" %(kwrd, np.sum(valid_labels[kwrd], axis=0)[0], valid_labels[kwrd].shape[0]))
+        # for kwrd in self.spec_list:
+        #     print("[info][%s] train_dataset: positive_samples/total ratio : %d/%d" %(kwrd, np.sum(train_labels[kwrd], axis=0)[0], train_labels[kwrd].shape[0]))
+        #     print("[info][%s] valid_dataset: positive_samples/total ratio : %d/%d" %(kwrd, np.sum(valid_labels[kwrd], axis=0)[0], valid_labels[kwrd].shape[0]))
 
         # although we have shuffled the training dataset once, there is going to be another shuffle inside the batch generator
         batch_generator = BatchGenerator(len(train_input1), self.batch_size)
-        print("[info] training the model with dataset ....")
+        self.log_text("[info] training the model with dataset ....")
 
         total_n_batches = int(len(train_input1) // self.batch_size)
-        print("[info] number of total batches: %d" %total_n_batches)
-        print(30*"-")
+        self.log_text("[info] number of total batches: %d" %total_n_batches)
+        self.log_text(30*"-")
 
         # tf.global_variables_initializer().run()
         self.mu.assign(train_mean).op.run()
@@ -327,16 +355,18 @@ class DeepCktAgent(object):
                 with open('bag_deep_ckt/checkpoint/db/data.pkl', 'wb') as f:
                     pickle.dump(db, f)
             if epoch % self.display_step == 0:
-                print(10*"-")
-                print("[epoch %d] total_loss: %f " %(epoch, avg_total_loss))
+                self.log_text(10*"-")
+                self.log_text("[epoch %d] total_loss: %f " %(epoch, avg_total_loss))
                 for kwrd in self.spec_list:
-                    print("".format(kwrd))
-                    print("[%s] loss: %f" %(kwrd, avg_loss[kwrd]))
-                    print("[%s] train_acc = %.2f%%, valid_acc = %.2f%%" %(kwrd, avg_train_acc[kwrd]*100,
-                                                                          avg_valid_acc[kwrd]*100))
+                    self.log_text("".format(kwrd))
+                    self.log_text("[%s] loss: %f" %(kwrd, avg_loss[kwrd]))
+                    self.log_text("[%s] train_acc = %.2f%%, valid_acc = %.2f%%" %(kwrd, avg_train_acc[kwrd]*100,
+                                                                                  avg_valid_acc[kwrd]*100))
 
         t_plus = time.time()
-        print("[info] training done %.2fSec" % (t_plus - t_minus))
+        self.n_training += 1
+        self.training_time += (t_plus - t_minus)
+        self.log_text("[info] training done %.2fSec" % (t_plus - t_minus))
 
     def run_model(self, db, pop_dict, max_iter=1000):
         pop_size = len(pop_dict['cost'])
@@ -348,19 +378,24 @@ class DeepCktAgent(object):
         if critical_spec_kwrd == '':
             return [], True
 
+        # if found even one solution exit the process
+        # if pop_dict['cost'][0].cost == 0:
+        #     return [], True
+
         if critical_spec_kwrd not in self.critical_specs:
             self.critical_specs.append(critical_spec_kwrd)
-
+        self.log_text('[debug] critical_specs: {}'.format(self.critical_specs))
         pop_dict['critical_specs'] = find_ciritical_pop(self.eval_core, db, k=pop_size, specs=self.critical_specs)
 
         ref_design = pop_dict['critical_specs'][self.ref_dsn_idx]
 
-        print(30*"-")
-        print("[debug] ref design {} -> {}".format(ref_design, ref_design.cost))
-        debug_str = ''
-        for i, key in enumerate(ref_design.specs.keys()):
-            debug_str += '{} -> '.format(ref_design.specs[key])
-        print("[debug] "+debug_str)
+        self.log_text(30*"-")
+        self.log_text("[debug] ref design {} -> {}".format(ref_design, ref_design.cost))
+        self.log_text("[debug] {}".format(ref_design.specs))
+        # debug_str = ''
+        # for i, key in enumerate(ref_design.specs.keys()):
+        #     debug_str += '{} -> '.format(ref_design.specs[key])
+        # print("[debug] "+debug_str)
 
         all_crit_specs_except_last = self.critical_specs.copy()
         all_crit_specs_except_last.remove(critical_spec_kwrd)
@@ -368,16 +403,16 @@ class DeepCktAgent(object):
         parent1 = find_ciritical_pop(self.eval_core, db, k=pop_size, specs=all_crit_specs_except_last)
         parent2 = pop_dict[critical_spec_kwrd]
 
-        print("///////------------> parent1")
+        self.log_text("///////------------> parent1", stream_to_file=False)
         penalties = compute_critical_penalties(self.eval_core, parent1, all_crit_specs_except_last)
         for i, penalty in enumerate(penalties[:self.ref_dsn_idx]):
-            print("{} -> {}".format(parent1[i], penalty))
-        print("///////------------> parent2")
+            self.log_text("{} -> {}".format(parent1[i], penalty), stream_to_file=False)
+        self.log_text("///////------------> parent2", stream_to_file=False)
         for ind in parent2[:self.ref_dsn_idx]:
-            print("{} -> {}".format(ind, ind.specs[critical_spec_kwrd]))
+            self.log_text("{} -> {}".format(ind, ind.specs[critical_spec_kwrd]), stream_to_file=False)
 
-        print(30*"-")
-        print("[info] running model ... ")
+        self.log_text(30*"-")
+        self.log_text("[info] running model ... ")
 
         offsprings = []
         n_iter = 0
@@ -390,9 +425,10 @@ class DeepCktAgent(object):
             for new_design in new_designs:
                 if any([(new_design == row) for row in db]) or any([(new_design == row) for row in offsprings]):
                     # if design is already in the design pool skip ...
-                    print("[debug] design {} already exists".format(new_design))
+                    self.log_text("[debug] design {} already exists".format(new_design))
                     continue
 
+                q_start = time.time()
                 n_iter += 1
                 nn_input1 = np.array(new_design)
                 nn_input2 = np.array(ref_design)
@@ -406,14 +442,26 @@ class DeepCktAgent(object):
                 # design metrics
                 is_new_design_better = [random.random() > prediction[kwrd][0][0] for kwrd in self.critical_specs]
 
+                self.n_queries += 1
+                self.query_time += time.time() - q_start
+
                 if all(is_new_design_better):
                     offsprings.append(new_design)
 
         if (len(offsprings) < self.n_new_samples):
             return offsprings, True
 
-        print(30*"-")
+        self.log_text(30*"-")
+        for offspring in offsprings:
+            self.log_text(offspring)
+
+        s = time.time()
         design_results = self.eval_core.evaluate(offsprings)
+        e = time.time()
+        self.n_sims += len(offsprings)
+        self.sim_time += e - s
+
+        self.log_text('[info] design evaluation time: {:.2f}'.format(e-s) )
         list_to_be_removed = []
         for i, design in enumerate(offsprings):
             design_result = design_results[i]
@@ -422,21 +470,18 @@ class DeepCktAgent(object):
                 for key in design.specs.keys():
                     design.specs[key] = design_result[key]
 
-                print("[debug] design {} with cost {} was added".format(design, design.cost))
-                debug_str = ''
-                for key in design.specs.keys():
-                    debug_str += '{} -> '.format(design.specs[key])
-                print("[debug] "+debug_str)
-                print(10*'-')
+                self.log_text("[debug] design {} with cost {} was added".format(design, design.cost))
+                self.log_text("[debug] {}".format(design.specs))
+
             else:
-                print("[debug] design {} did not produce valid results".format(design))
+                self.log_text("[debug] design {} did not produce valid results".format(design))
                 list_to_be_removed.append(design)
 
         for design in list_to_be_removed:
             offsprings.remove(design)
 
-        print("[info] new designs tried: %d" %n_iter)
-        print("[info] new candidates size: %d " %len(offsprings))
+        self.log_text("[info] new designs tried: %d" %n_iter)
+        self.log_text("[info] new candidates size: %d " %len(offsprings))
 
         return offsprings, False
 
@@ -450,7 +495,7 @@ def main():
                         help='The name used for logdir creation as well as the time stamp')
     parser.add_argument('--max_n_retraining', '-mnr', type=int, default=100,
                         help='the maximum number of retrainings (the algorithm can finish sooner than this)')
-    parser.add_argument('--n_init_samples', '-n', type=int, default=80,
+    parser.add_argument('--n_init_samples', '-n', type=int, default=100,
                         help='if init_data is given n random ones are picked from it ,'
                              ' if not, eval_core will generate and evaluate n samples, at the beginning')
     parser.add_argument('--max_iter', type=int, default=50000,
@@ -476,26 +521,34 @@ def main():
     eval_cls = getattr(eval_module, content['eval_core_class'])
     eval_core = eval_cls(design_specs_fname=args.design_specs_fname)
 
+    n_init_samples = args.n_init_samples
     # load/create db
     if os.path.isfile(db_dir+'/init_data.pickle'):
         with open(db_dir+'/init_data.pickle', 'rb') as f:
             db = pickle.load(f)
     else:
-        db = eval_core.generate_data_set(args.n_init_samples)
+        db = eval_core.generate_data_set(args.n_init_samples, evaluate=True)
         with open(db_dir+'/init_data.pickle', 'wb') as f:
             pickle.dump(db, f)
 
-
-    set_random_seed(10)
-    # check len(db)
-    db = clean(db)
+    set_random_seed(1)
+    alg_start = time.time()
+    # don't remove clean db at all, it is harmless, but harmful if original data was generated
+    # using a different data structure for util.Design
+    db = clean(db, eval_core.spec_range)
     # check len(db): it should be the same, since no invalid design is in db anymore
     # check d.cost for some ds
-    db = relable(db, eval_core)
+    # db = relable(db, eval_core)
     # check d.cost fo the same ds and check the relableling function
     db = sorted(db, key=lambda x: x.cost)
-    db = random.choices(db, k=args.n_init_samples)
-    n_init_samples = len(db)
+    # pdb.set_trace()
+    # random.shuffle(db)
+    db = db[1:]
+    # db = sorted(db, key=lambda x: x.cost)
+    pdb.set_trace()
+
+    time_stamp = time.strftime("%d-%m-%Y_%H-%M-%S")
+    print_log_path = 'bag_deep_ckt/log_files/'+ args.env_name +'_log_'+ time_stamp +'.txt'
 
     agent = DeepCktAgent(
         eval_core=eval_core,
@@ -507,7 +560,7 @@ def main():
         num_classes=2,
         valid_frac=0.2,
         max_n_retraining=args.max_n_retraining,
-        k_top=len(db)-1,
+        k_top=len(db),
         ref_dsn_idx=args.ref_dsn_idx,
         max_data_set_size=600,
         num_epochs=10,
@@ -516,6 +569,7 @@ def main():
         ckpt_step=100,
         size=20,
         learning_rate=0.001,
+        log_path = print_log_path,
     )
 
     agent.build_computation_graph()
@@ -524,9 +578,13 @@ def main():
 
     data_set_list = []
     data_set_list.append(db)
+    log_dir = 'bag_deep_ckt/log_files/'+ args.env_name +'_MDNN_'+ time_stamp +'.pkl'
+    with open(log_dir, 'wb') as f:
+        pickle.dump(data_set_list, f)
+
     agent.train(db)
     for i in range(args.max_n_retraining):
-        pop_dict = find_pop(db, k=n_init_samples, spec_range=eval_core.spec_range)
+        pop_dict = find_pop(db, k=agent.k_top, spec_range=eval_core.spec_range)
 
         offsprings, isConverged = agent.run_model(db, pop_dict, max_iter=args.max_iter)
 
@@ -534,30 +592,52 @@ def main():
             break
         elif len(offsprings) == 0:
             continue
-
         if args.evict_old_data:
             db = db[:-len(offsprings)] + offsprings
         else:
             db = db + offsprings
         data_set_list.append(offsprings)
 
+        with open(log_dir, 'wb') as f:
+            pickle.dump(data_set_list, f)
+
+        # adjust dataset size for training, if not desired, comment the agent.k_top= ... line
+        db = sorted(db, key=lambda x:x.cost)
+        worst_offspring = max(offsprings, key=lambda x: x.cost)
+        agent.log_text('[info] k_top alternative: {}'.format(db.index(worst_offspring)))
+        agent.k_top = max(n_init_samples, db.index(worst_offspring))
+
         agent.train(db)
+        agent.log_text("[INFO] n_queries = {}".format(agent.n_queries))
+        agent.log_text("[INFO] query_time = {}".format(agent.query_time))
+        agent.log_text("[INFO] n_simulations = {}".format(agent.n_sims))
+        agent.log_text("[INFO] sim_time = {}".format(agent.sim_time))
+        agent.log_text("[INFO] n_training = {}".format(agent.n_training))
+        agent.log_text("[INFO] training_time = {}".format(agent.training_time))
+        agent.log_text("[INFO] total_time = {}".format(time.time()-alg_start))
 
-
-    log_dir = 'bag_deep_ckt/log_files/'+ args.env_name +'_'+'MDNN_'+ \
-              time.strftime("%d-%m-%Y_%H-%M-%S")+'.pkl'
 
     with open(log_dir, 'wb') as f:
         pickle.dump(data_set_list, f)
 
     sorted_db = sorted(db, key=lambda x: x.cost)
-    print("[finished] total_n_evals = {}".format(len(db)))
-    print("[finished] best_solution = {}".format(sorted_db[0]))
-    print("[finished] id = {}".format(sorted_db[0].id))
-    print("[finished] cost = {}".format(sorted_db[0].cost))
-    print("[finished] performance \n{} ".format(sorted_db[0].specs))
+    # paper stuff
+    agent.log_text("[finished] n_queries = {}".format(agent.n_queries))
+    agent.log_text("[finished] query_time = {}".format(agent.query_time))
+    agent.log_text("[finished] n_simulations = {}".format(agent.n_sims))
+    agent.log_text("[finished] sim_time = {}".format(agent.sim_time))
+    agent.log_text("[finished] n_training = {}".format(agent.n_training))
+    agent.log_text("[finished] training_time = {}".format(agent.training_time))
+    agent.log_text("[finished] total_time = {}".format(time.time()-alg_start))
+
+
+    agent.log_text("[finished] total_n_evals = {}".format(len(db)))
+    agent.log_text("[finished] best_solution = {}".format(sorted_db[0]))
+    agent.log_text("[finished] id = {}".format(sorted_db[0].id))
+    agent.log_text("[finished] cost = {}".format(sorted_db[0].cost))
+    agent.log_text("[finished] performance \n{} ".format(sorted_db[0].specs))
     for ind in sorted_db[:args.ref_dsn_idx]:
-        print("{} -> {} -> {}".format(ind, ind.cost, ind.specs))
+        agent.log_text("{} -> {} -> {}".format(ind, ind.cost, ind.specs))
 
     # re-evaluate the best design:
     # eval_core.evaluate([sorted_db[0]])
