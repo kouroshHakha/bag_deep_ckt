@@ -4,7 +4,7 @@ eval_core_class: "NgspiceEvaluationCore"
 measurement:
   measurement_module: "eval_engines.NGspice.TwoStageComplete"
   measurement_class: "TwoStageMeasManager"
-  root_dir: "data/two_stage_opamp_ngspice"
+  root_dir: "/scratch/data/two_stage_opamp_ngspice_oracle"
   tb_params:
     feedback_factor: !!float 1.0
     tot_err:  !!float 0.01
@@ -38,11 +38,11 @@ params:
 
 
 spec_range:
-  gain: [!!float 300.0, null]
-  ugbw: [!!float 10.0e6, null] #Hz
-  pm: [!!float 60.0, null]
-  tset: [null, !!float 90.0e-9] #Seconds
-  psrr: [!!float 50.0, null] #db
-  cmrr: [!!float 50.0, null] #db
-  offset_sys: [null, !!float 1.0e-3] #Volts
-  ibias: [null, !!float 0.2e-3] #Amper
+  gain: [!!float 300.0, null, 1]
+  ugbw: [!!float 10.0e6, null, 1] #Hz
+  pm: [!!float 60.0, null, 1]
+  tset: [null, !!float 90.0e-9, 1] #Seconds
+  psrr: [!!float 50.0, null, 1] #db
+  cmrr: [!!float 50.0, null, 1] #db
+  offset_sys: [null, !!float 1.0e-3, 1] #Volts
+  ibias: [null, !!float 0.2e-3, 1] #Amper

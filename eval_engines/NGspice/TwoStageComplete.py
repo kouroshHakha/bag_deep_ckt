@@ -4,6 +4,7 @@ import scipy.interpolate as interp
 import scipy.optimize as sciopt
 import yaml
 import importlib
+import time
 
 debug = False
 
@@ -268,7 +269,7 @@ class TwoStageMeasManager(object):
                 self.search_space_size = self.search_space_size * len(self.params_vec[key])
 
         self.measurement_specs = self.ver_specs['measurement']
-        root_dir = self.measurement_specs['root_dir']
+        root_dir = self.measurement_specs['root_dir'] + "_" + time.strftime("%d-%m-%Y_%H-%M-%S")
         num_process = self.measurement_specs['num_process']
 
         self.netlist_module_dict = {}
@@ -336,13 +337,13 @@ class TwoStageMeasManager(object):
         penalties = []
         for spec_num in spec_nums:
             penalty = 0
-            spec_min, spec_max = self.spec_range[spec_kwrd]
+            spec_min, spec_max, w = self.spec_range[spec_kwrd]
             if spec_max is not None:
                 if spec_num > spec_max:
-                    penalty += abs((spec_num - spec_max) / (spec_num + spec_max))
+                    penalty += w*abs((spec_num - spec_max) / (spec_num + spec_max))
             if spec_min is not None:
                 if spec_num < spec_min:
-                    penalty += abs((spec_num - spec_min) / (spec_num + spec_min))
+                    penalty += w*abs((spec_num - spec_min) / (spec_num + spec_min))
             penalties.append(penalty)
         return penalties
 
