@@ -17,6 +17,13 @@ class NgspiceEvaluationCore(object):
         self.params = self.measMan.params
         self.spec_range = self.measMan.spec_range
         self.params_vec = self.measMan.params_vec
+        # minimum and maximum of each parameter
+        # params_vec contains the acutal numbers but min and max should be the indices
+        self.params_min = [0]*len(self.params_vec)
+
+        self.params_max = []
+        for val in self.params_vec.values():
+            self.params_max.append(len(val)-1)
 
         self.id_encoder = IDEncoder(self.params_vec)
 
@@ -79,8 +86,10 @@ class NgspiceEvaluationCore(object):
 
 
 if __name__ == '__main__':
-    yaml_file = './bag_deep_ckt/eval_engines/NGspice/ngspice_inputs/yaml_files/two_stage_opamp.yaml'
+    # yaml_file = './bag_deep_ckt/eval_engines/NGspice/ngspice_inputs/yaml_files/two_stage_opamp.yaml'
+    yaml_file = './bag_deep_ckt/eval_engines/NGspice/ngspice_inputs/yaml_files/gb_none.yaml'
     eval_core = NgspiceEvaluationCore(yaml_file)
+
 
     with open(yaml_file, 'r') as f:
         content = yaml.load(f)
@@ -92,7 +101,7 @@ if __name__ == '__main__':
     random.seed(10)
 
     start = time.time()
-    data = eval_core.generate_data_set(n=200)
+    data = eval_core.generate_data_set(n=100)
     print("time for simulating one instance: {}".format((time.time() - start)))
 
     import pickle
@@ -102,4 +111,5 @@ if __name__ == '__main__':
 
     with open(db_dir + "/init_data.pickle", 'rb') as f:
         data = pickle.load(f)
+        data = sorted(data, key=lambda x:x.cost)
         a = 1 / 0
