@@ -7,6 +7,7 @@ import random
 import tensorflow as tf
 import sys
 import time
+from copy import deepcopy
 
 from typing import TYPE_CHECKING, List, Optional, Dict, Any, Tuple, Sequence
 
@@ -210,6 +211,28 @@ class Design(list):
         for spec_kwrd in spec_range.keys():
             self.specs[spec_kwrd] = None
 
+
+        self.parent1 = None
+        self.parent2 = None
+        self.sibling = None
+
+    def set_parents_and_sibling(self, parent1, parent2, sibling):
+        self.parent1 = parent1
+        self.parent2 = parent2
+        self.sibling = sibling
+
+    def is_init_population(self):
+        if self.parent1 is None:
+            return True
+        else:
+            return False
+    def is_mutated(self):
+        if self.parent1 is not None:
+            if self.parent2 is None:
+                return True
+        else:
+            return False
+
     @property
     def id(self):
         return self.id_encoder.convert_list_2_id(list(self))
@@ -232,14 +255,34 @@ class Design(list):
         self.__fitness = x
         self.__cost = -x if x is not None else None
 
+    @staticmethod
+    def recreate_design(spec_range, old_design, eval_core):
+        dsn = Design(spec_range, eval_core.id_encoder, old_design)
+        dsn.specs.update(**old_design.specs)
+        for attr in dsn.__dict__.keys():
+            if (attr in old_design.__dict__.keys()) and (attr not in ['specs']):
+                dsn.__dict__[attr] = deepcopy(old_design.__dict__[attr])
+        return dsn
 
-def clean(db):
+    @staticmethod
+    def genocide(*args):
+        for dsn in args:
+            dsn.parent1 = None
+            dsn.parent2 = None
+            dsn.sibling = None
+
+def clean(db, eval_core):
+    new_spec_range = eval_core.spec_range
     list_to_be_removed = []
     for data in db:
         if data.cost is None:
             list_to_be_removed.append(data)
     for data in list_to_be_removed:
         db.remove(data)
+
+    for i in range(len(db)):
+        d_dummy = Design.recreate_design(new_spec_range, db[i], eval_core)
+        db[i] = d_dummy
     return db
 
 
