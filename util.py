@@ -7,7 +7,7 @@ import random
 import tensorflow as tf
 import sys
 import time
-from copy import deepcopy
+from copy import deepcopy, copy
 
 from typing import TYPE_CHECKING, List, Optional, Dict, Any, Tuple, Sequence
 
@@ -202,15 +202,11 @@ class Design(list):
         self.cost =     None
         self.fitness =  None
         self.specs = {}
+        # uniquely determines the id of the design given the list values
         self.id_encoder = id_encoder
-        # # virtuoso cannot handle lvs for long named files, so id should be the shortest while unique at the same time
-        # self.id = int((time.time() - G.ref_id) * 1e6)
-        # print(G.ref_id)
-        # # assure unique ids, delay for 1000 us
-        # time.sleep(0.001)
+        self.spec_range = spec_range
         for spec_kwrd in spec_range.keys():
             self.specs[spec_kwrd] = None
-
 
         self.parent1 = None
         self.parent2 = None
@@ -270,6 +266,11 @@ class Design(list):
             dsn.parent1 = None
             dsn.parent2 = None
             dsn.sibling = None
+
+    def copy(self):
+        new = copy(self)
+        new.specs = deepcopy(self.specs)
+        return new
 
 def clean(db, eval_core):
     new_spec_range = eval_core.spec_range
