@@ -1,5 +1,5 @@
 import re
-import libpsf
+#import libpsf
 import copy
 import os
 import jinja2
@@ -8,7 +8,8 @@ import subprocess
 from multiprocessing.dummy import Pool as ThreadPool
 import yaml
 import importlib
-
+import IPython
+from jinja2 import Environment, FileSystemLoader
 debug = False
 
 def get_config_info():
@@ -19,6 +20,7 @@ def get_config_info():
         raise EnvironmentError('BASE_TMP_DIR is not set in environment variables')
     else:
         config_info['BASE_TMP_DIR'] = base_tmp_dir
+    return config_info
 
 class SpectreWrapper(object):
 
@@ -46,10 +48,15 @@ class SpectreWrapper(object):
         os.makedirs(self.gen_dir, exist_ok=True)
 
         self.post_process = post_process_fn
-        raw_file = open(netlist_loc, 'r')
-        self.tmp_lines = raw_file.readlines()
-        raw_file.close()
+        #raw_file = open(netlist_loc, 'r')
+        #self.tmp_lines = raw_file.readlines()
+        #raw_file.close()
 
+        #jinja stuff
+        dir_netlist, netlist_name = os.path.split(netlist_loc)
+        file_loader = FileSystemLoader(searchpath=dir_netlist)
+        jinja_env = Environment(loader=file_loader)
+        self.template = jinja_env.get_template(netlist_name)
 
     def _get_design_name(self, state):
         """
@@ -59,7 +66,12 @@ class SpectreWrapper(object):
         """
         fname = self.base_design_name
         for value in state.values():
-            fname += "_" + str(value)
+            if isinstance(value,float):
+              str_val = str(value)
+              str_val = str_val.replace('.','')
+            else:
+              str_val = str(value)
+            fname += "_" + str(str_val)
         return fname
 
     def _create_design(self, state, new_fname):
@@ -68,35 +80,11 @@ class SpectreWrapper(object):
         os.makedirs(design_folder, exist_ok=True)
 
         fpath = os.path.join(design_folder, new_fname + '.cir')
-
-        lines = copy.deepcopy(self.tmp_lines)
-        for line_num, line in enumerate(lines):
-            if '.include' in line:
-                regex = re.compile("\.include\s*\"(.*?)\"")
-                found = regex.search(line)
-                if found:
-                    # current_fpath = os.path.realpath(__file__)
-                    # parent_path = os.path.abspath(os.path.join(current_fpath, os.pardir))
-                    # parent_path = os.path.abspath(os.path.join(parent_path, os.pardir))
-                    # path_to_model = os.path.join(parent_path, 'spice_models/45nm_bulk.txt')
-                    # lines[line_num] = lines[line_num].replace(found.group(1), path_to_model)
-                    pass # do not change the model path
-            if '.param' in line:
-                for key, value in state.items():
-                    regex = re.compile("%s=(\S+)" % (key))
-                    found = regex.search(line)
-                    if found:
-                        new_replacement = "%s=%s" % (key, str(value))
-                        lines[line_num] = lines[line_num].replace(found.group(0), new_replacement)
-            if 'wrdata' in line:
-                regex = re.compile("wrdata\s*(\w+\.\w+)\s*")
-                found = regex.search(line)
-                if found:
-                    replacement = os.path.join(design_folder, found.group(1))
-                    lines[line_num] = lines[line_num].replace(found.group(1), replacement)
-
+       
+        rendered_template = self.template.render(state)
+        
         with open(fpath, 'w') as f:
-            f.writelines(lines)
+            f.writelines(rendered_template)
             f.close()
         return design_folder, fpath
 
@@ -249,4 +237,13 @@ class EvaluationEngine(object):
         else:
             return spec_nums[worst_idx]
 
+#unit test
+if __name__ == '__main__':
+
+  #testing the cs amp functionality with Jinja2
+  dsn_netlist = '/tools/projects/ksettaluri6/BAG2_TSMC16FFC_tutorial/bag_deep_ckt/eval_engines/spectre/netlist_templates/cs_ac_16nm.scs'
+  cs_env = SpectreWrapper(netlist_loc=dsn_netlist)
+  
+  state = {"nfin":2, "nf":4, "vb":0.5, "res":1000, "vdd":1.0}
+  cs_env._create_design_and_simulate(state)
 
