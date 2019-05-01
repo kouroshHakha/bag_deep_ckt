@@ -241,7 +241,7 @@ class EvaluationEngine(object):
 if __name__ == '__main__':
 
   #testing the cs amp functionality with Jinja2
-  dsn_netlist = '/tools/projects/ksettaluri6/BAG2_TSMC16FFC_tutorial/bag_deep_ckt/eval_engines/spectre/netlist_templates/cs_ac_16nm.scs'
+  dsn_netlist = 'bag_deep_ckt/eval_engines/spectre/netlist_templates/cs_ac_16nm.scs'
   cs_env = SpectreWrapper(netlist_loc=dsn_netlist)
   
   state = {"nfin":2, "nf":4, "vb":0.5, "res":1000, "vdd":1.0}
