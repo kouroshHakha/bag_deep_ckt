@@ -4,8 +4,8 @@
 // Design view name: schematic
 simulator lang=spectre
 global 0
-parameters nf={{nf}} nfin={{nfin}} r={{res}} vb={{vb}} VDD={{vdd}}
-include "{{model}}" section={{corner}}
+parameters nf={{nf}} nfin={{nfin}} r={{res}} vb={{vb}} VDD=0.9
+include "/tools/gftech14/GF_PDK/14LPP-XL_V1.3.1.0/Models/Spectre/models/LN14LPP_Spectre.lib" section=tt
 
 
 // Library name: playground

@@ -30,7 +30,6 @@ bag_libs.def
 *.cdslck*
 .calibreviewsetup
 .tmp_*
-core.*
 
 # calibre files
 .cgidrcdb
