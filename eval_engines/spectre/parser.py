@@ -30,7 +30,7 @@ class SpectreParser(object):
                 file = os.path.join(raw_folder, file)
                 datum = cls.process_file(file)
             except FileNotCompatible:
-                print('failed on {}'.format(file))
+                # print('failed on {}'.format(file))
                 continue
 
             _, kwrd = os.path.split(file)

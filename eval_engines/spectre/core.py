@@ -13,7 +13,7 @@ from eval_engines.util.core import IDEncoder, Design
 from eval_engines.spectre.parser import SpectreParser
 
 
-debug = True
+debug = False
 
 def get_config_info():
     # TODO
@@ -179,16 +179,15 @@ class EvaluationEngine(object):
     def num_params(self):
         return len(self.params_vec)
 
-    def generate_data_set(self, n=1):
+    def generate_data_set(self, n=1, debug=False):
         """
         :param n:
-        :param evaluate:
         :return: a list of n Design objects with populated attributes (i.e. cost, specs, id)
         """
         valid_designs, tried_designs = [], []
 
         useless_iter_count = 0
-        while len(valid_designs) <= n:
+        while len(valid_designs) < n:
             design = {}
             for key, vec in self.params_vec.items():
                 rand_idx = random.randrange(len(vec))
@@ -200,7 +199,7 @@ class EvaluationEngine(object):
                                      "result in {} number of valid designs".format(n))
                 useless_iter_count += 1
                 continue
-            design_result = self.evaluate([design])[0]
+            design_result = self.evaluate([design], debug=debug)[0]
             if design_result['valid']:
                 design.cost = design_result['cost']
                 for key in design.specs.keys():
@@ -211,7 +210,7 @@ class EvaluationEngine(object):
 
         return valid_designs[:n]
 
-    def evaluate(self, design_list):
+    def evaluate(self, design_list, debug=False):
         """
         serial implementation of evaluate (not parallel)
         :param design_list:
@@ -224,8 +223,11 @@ class EvaluationEngine(object):
                 result = self._evaluate(design)
                 result['valid'] = True
             except Exception as e:
+                if debug:
+                    raise e
                 result = {'valid': False}
-                print(getattr(e, 'message', str(e)))
+                print(str(e))
+
             results.append(result)
         return results
 
@@ -239,8 +241,6 @@ class EvaluationEngine(object):
         for netlist_name, netlist_module in self.netlist_module_dict.items():
             results[netlist_name] = netlist_module.run(state, dsn_names)
 
-        import pdb
-        pdb.set_trace()
         specs_dict = self.get_specs(results, self.measurement_specs['meas_params'])
         specs_dict['cost'] = self.cost_fun(specs_dict)
         return specs_dict

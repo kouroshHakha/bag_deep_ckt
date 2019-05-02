@@ -11,8 +11,11 @@ class CSMeasMan(EvaluationEngine):
 
 
     def get_specs(self, results_dict, params):
-        specs_dict = None
-        pdb.set_trace()
+        specs_dict = dict()
+        ac_dc = results_dict['ac_dc']
+        for _, res, _ in ac_dc:
+            specs_dict = res
+
         return specs_dict
 
     def compute_penalty(self, spec_nums, spec_kwrd):
@@ -38,10 +41,10 @@ class ACTB(object):
     @classmethod
     def process_ac(cls, results, params):
         ac_result = results['ac']
-        dc_results = results['dcOp']
+        dc_results = results['dcOpc']
 
         vout = ac_result['out']
-        freq = ac_result['sweep_vars']
+        freq = ac_result['sweep_values']
 
         gain = cls.find_dc_gain(vout)
         bw = cls.find_bw(vout, freq)
@@ -50,7 +53,6 @@ class ACTB(object):
             gain=gain,
             bw=bw
         )
-        pdb.set_trace()
         return results
 
     @classmethod
@@ -85,3 +87,4 @@ if __name__ == '__main__':
     eval_core = CSMeasMan(yname)
 
     designs = eval_core.generate_data_set(n=1)
+    pdb.set_trace()

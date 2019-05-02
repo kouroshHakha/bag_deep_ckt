@@ -37,4 +37,5 @@ bag_libs.def
 .cgipexdb
 calibreview.setup
 
-# pvs files
+# netlists
+eval_engines/spectre/netlist_templates/*
