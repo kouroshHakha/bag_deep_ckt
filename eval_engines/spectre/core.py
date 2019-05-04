@@ -179,7 +179,7 @@ class EvaluationEngine(object):
     def num_params(self):
         return len(self.params_vec)
 
-    def generate_data_set(self, n=1, debug=False):
+    def generate_data_set(self, n=1, debug=False, parallel_config=None):
         """
         :param n:
         :return: a list of n Design objects with populated attributes (i.e. cost, specs, id)
@@ -210,7 +210,7 @@ class EvaluationEngine(object):
 
         return valid_designs[:n]
 
-    def evaluate(self, design_list, debug=False):
+    def evaluate(self, design_list, debug=False, parallel_config=None):
         """
         serial implementation of evaluate (not parallel)
         :param design_list:
@@ -220,18 +220,18 @@ class EvaluationEngine(object):
         results = []
         for design in design_list:
             try:
-                result = self._evaluate(design)
+                result = self._evaluate(design, parallel_config=parallel_config)
                 result['valid'] = True
             except Exception as e:
                 if debug:
                     raise e
                 result = {'valid': False}
-                print(str(e))
+                print(getattr(e, 'message', str(e)))
 
             results.append(result)
         return results
 
-    def _evaluate(self, design):
+    def _evaluate(self, design, parallel_config):
         state_dict = dict()
         for i, key in enumerate(self.params_vec.keys()):
             state_dict[key] = self.params_vec[key][design[i]]
