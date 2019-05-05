@@ -241,9 +241,10 @@ class EvaluationEngine(object):
 if __name__ == '__main__':
 
   #testing the cs amp functionality with Jinja2
-  dsn_netlist = 'bag_deep_ckt/eval_engines/spectre/netlist_templates/cs_ac_16nm.scs'
-  cs_env = SpectreWrapper(netlist_loc=dsn_netlist)
-  
-  state = {"nfin":2, "nf":4, "vb":0.5, "res":1000, "vdd":1.0}
-  cs_env._create_design_and_simulate(state)
+  dsn_netlist = 'bag_deep_ckt/eval_engines/spectre/netlist_templates/two_stage_opamp_16nm.scs'
+  opamp_env = SpectreWrapper(netlist_loc=dsn_netlist)
+
+  IPython.embed()
+  state = {"tail1":2, "tail2":4, "tailcm":0.5, "in":1000, "ref":1.0, "diode1":1.0, "ngm1":2.0, "diode2":2.0, "ngm2":2.0, "rfb":100, "cfb":10.0e-15}
+  opamp_env._create_design_and_simulate(state)
 
