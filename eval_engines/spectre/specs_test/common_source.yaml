@@ -1,15 +1,14 @@
 database_dir: "bag_deep_ckt/checkpoint/db/two_stage_opamp_ngspice"
 
 measurement:
-  meas_module: 'eval_engines.spectre.script_test.cs_meas_man'
-  meas_class:  'CSMeasMan'
-  params: {}
+  meas_params: {} # high level measurement params go here for post process
   testbenches:
     ac_dc:
-      netlist_template: "eval_engines/spectre/netlist_templates/common_source.scs"
+      netlist_template: "bag_deep_ckt/eval_engines/spectre/netlist_templates/common_source_ac.scs"
       tb_module: "eval_engines.spectre.script_test.cs_meas_man"
       tb_class: "ACTB"
-      params: {}
+      post_process_function: "process_ac" # a class method defined in meas manager
+      tb_params: {} # lower level params for tb evaluation goes here
 
 params:
   nfin: !!python/tuple [1, 10, 1]
@@ -19,5 +18,4 @@ params:
 
 spec_range:
   gain: [!!float 1, null, 1]
-  ugbw: [!!float 10.0e6, null, 1] #Hz
-  pm: [!!float 60.0, null, 1]
+  bw: [!!float 10.0e6, null, 1] #Hz
