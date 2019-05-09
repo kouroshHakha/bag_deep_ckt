@@ -13,13 +13,23 @@ class FileNotCompatible(Exception):
     def __init__(self, *args, **kwargs):
         Exception.__init__(self,  args, kwargs)
 
-def is_ignored(string):
+def is_ignored(string: str) -> bool:
+    """
+    convenience function for checking if sting matches the names that should be ignored
+    """
     return any([fnmatch.fnmatch(string, pattern) for pattern in IGNORE_LIST])
 
 class SpectreParser(object):
 
     @classmethod
-    def parse(cls, raw_folder):
+    def parse(cls, raw_folder: str) -> Dict[str, Any]:
+        """
+        parses the spectre data in the raw folder
+        :param raw_folder:
+            absolute path to the spectre raw data
+        :return:
+            dictionary representing all the simulation data that has been saved.
+        """
         folder_path = os.path.abspath(raw_folder)
         data = dict()
         files =  os.listdir(folder_path)
@@ -30,7 +40,6 @@ class SpectreParser(object):
                 file = os.path.join(raw_folder, file)
                 datum = cls.process_file(file)
             except FileNotCompatible:
-                # print('failed on {}'.format(file))
                 continue
 
             _, kwrd = os.path.split(file)
@@ -40,7 +49,14 @@ class SpectreParser(object):
         return data
 
     @classmethod
-    def process_file(cls, file):
+    def process_file(cls, file: str) -> Dict[str, Any]:
+        """
+        parses individual files if they are compatible with libpsf libarary
+        :param file:
+            path to the individual file
+        :return:
+            dictionary representing all the simulation data particular to this file
+        """
         fpath = os.path.abspath(file)
         try:
             psfobj = libpsf.PSFDataSet(fpath)

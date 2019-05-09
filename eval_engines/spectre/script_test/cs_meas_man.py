@@ -1,8 +1,10 @@
 from eval_engines.spectre.core import EvaluationEngine
-import numpy as np
 import scipy.interpolate as interp
 import scipy.optimize as sciopt
+import random
+import numpy as np
 import pdb
+
 
 class CSMeasMan(EvaluationEngine):
 
@@ -15,7 +17,7 @@ class CSMeasMan(EvaluationEngine):
         return specs_dict
 
     def compute_penalty(self, spec_nums, spec_kwrd):
-        if type(spec_nums) is not list:
+        if not hasattr(spec_nums, '__iter__'):
             spec_nums = [spec_nums]
         penalties = []
         for spec_num in spec_nums:
@@ -77,10 +79,15 @@ class ACTB(object):
                 return xstart
             return xstop
 
+def set_seed(seed):
+    random.seed(seed)
+    np.random.seed(seed)
+
 if __name__ == '__main__':
 
+    set_seed(10)
     yname = 'bag_deep_ckt/eval_engines/spectre/specs_test/common_source.yaml'
     eval_core = CSMeasMan(yname)
 
-    designs = eval_core.generate_data_set(n=4, debug=False)
+    designs = eval_core.generate_data_set(n=100, debug=False)
     pdb.set_trace()
