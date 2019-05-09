@@ -46,7 +46,7 @@ class SpectreWrapper(object):
             netlist_loc = os.path.abspath(netlist_loc)
         pp_module = importlib.import_module(tb_dict['tb_module'])
         pp_class = getattr(pp_module, tb_dict['tb_class'])
-        self.post_process = getattr(pp_class, tb_dict['post_process_function'])
+        self.post_process = getattr(pp_class, 'process')
         self.tb_params = tb_dict['tb_params']
 
         self.config_info = get_config_info()
@@ -129,7 +129,7 @@ class SpectreWrapper(object):
 
     def _create_design_and_simulate(self, state: Dict[str, Any], dsn_name: str = None,
                                     verbose: bool = False) \
-            -> Tuple[Dict[str, Any], Dict[str, float], int]:
+            -> Tuple[Dict[str, Any], Dict[str, Any], int]:
         """
         This function creates the new netlist and runs spectre commands on it and returns state,
         specs and error code tuple. The results are either post-processed by the post-processing
@@ -178,7 +178,7 @@ class SpectreWrapper(object):
         return res
 
     def run(self, state: Dict[str, Any], design_name: str = None, verbose: bool = False) \
-            -> Tuple[Dict[str, Any], Dict[str, float], int]:
+            -> Tuple[Dict[str, Any], Dict[str, Any], int]:
         """
         :param state:
             dictionary mapping parameter key words to values
@@ -193,6 +193,11 @@ class SpectreWrapper(object):
         specs = self._create_design_and_simulate(state, design_name, verbose)
         return specs
 
+class SubEngine(object):
+
+    @classmethod
+    def process(cls, results: Dict[str, Any], params: Dict[str, Any]) -> Dict[str, Any]:
+        raise NotImplementedError
 
 class EvaluationEngine(object):
 

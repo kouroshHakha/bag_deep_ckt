@@ -1,4 +1,5 @@
-from eval_engines.spectre.core import EvaluationEngine
+from typing import Dict, Any
+from eval_engines.spectre.core import EvaluationEngine, SubEngine
 import scipy.interpolate as interp
 import scipy.optimize as sciopt
 import random
@@ -34,10 +35,10 @@ class CSMeasMan(EvaluationEngine):
 
 
 
-class ACTB(object):
+class ACTB(SubEngine):
 
     @classmethod
-    def process_ac(cls, results, params):
+    def process(cls, results: Dict[str, Any], params: Dict[str, Any]) -> Dict[str, Any]:
         ac_result = results['ac']
         dc_results = results['dcOp']
 
@@ -54,14 +55,14 @@ class ACTB(object):
         return results
 
     @classmethod
-    def find_dc_gain (self, vout):
+    def find_dc_gain (cls, vout):
         return np.abs(vout)[0]
 
     @classmethod
-    def find_bw(self, vout, freq):
+    def find_bw(cls, vout, freq):
         gain = np.abs(vout)
         gain_3dB = gain[0] / np.sqrt(2)
-        return self._get_best_crossing(freq, gain, gain_3dB)
+        return cls._get_best_crossing(freq, gain, gain_3dB)
 
     @classmethod
     def _get_best_crossing(cls, xvec, yvec, val):

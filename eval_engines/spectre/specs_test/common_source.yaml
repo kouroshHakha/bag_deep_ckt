@@ -6,8 +6,7 @@ measurement:
     ac_dc:
       netlist_template: "bag_deep_ckt/eval_engines/spectre/netlist_templates/common_source_ac.scs"
       tb_module: "eval_engines.spectre.script_test.cs_meas_man"
-      tb_class: "ACTB"
-      post_process_function: "process_ac" # a class method defined in meas manager
+      tb_class: "ACTB" # this class should inherit eval_engines.core.SubEngine
       tb_params: {} # lower level params for tb evaluation goes here
 
 params:
