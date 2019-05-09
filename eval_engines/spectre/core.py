@@ -1,14 +1,14 @@
-import re
-import copy
-import os
-from jinja2 import Environment, FileSystemLoader
 import os
 import subprocess
-from multiprocessing.dummy import Pool as ThreadPool
 import yaml
 import importlib
 import random
 import numpy as np
+import multiprocessing as mp
+import threading
+import time
+from jinja2 import Environment, FileSystemLoader
+
 from eval_engines.util.core import IDEncoder, Design
 from eval_engines.spectre.parser import SpectreParser
 
@@ -16,7 +16,6 @@ from eval_engines.spectre.parser import SpectreParser
 debug = False
 
 def get_config_info():
-    # TODO
     config_info = dict()
     base_tmp_dir = os.environ.get('BASE_TMP_DIR', None)
     if not base_tmp_dir:
@@ -125,20 +124,15 @@ class SpectreWrapper(object):
         res = SpectreParser.parse(raw_folder)
         return res
 
-    def run(self, states, design_names=None, verbose=False):
-        # TODO: Use asyncio to instantiate multiple jobs for running parallel sims
+    def run(self, state, design_name=None, verbose=False):
         """
-
-        :param states:
+        :param state:
         :param design_names: if None default design name will be used, otherwise the given design name will be used
         :param verbose: If True it will print the design name that was created
         :return:
             results = [(state: dict(param_kwds, param_value), specs: dict(spec_kwds, spec_value), info: int)]
         """
-        pool = ThreadPool(processes=self.num_process)
-        arg_list = [(state, dsn_name, verbose) for (state, dsn_name)in zip(states, design_names)]
-        specs = pool.starmap(self._create_design_and_simulate, arg_list)
-        pool.close()
+        specs = self._create_design_and_simulate(state, design_name, verbose)
         return specs
 
 
@@ -174,12 +168,22 @@ class EvaluationEngine(object):
         for tb_kw, tb_val in tbs.items():
             self.netlist_module_dict[tb_kw] = SpectreWrapper(tb_val)
 
+        # default parameters for parallelization
+        self._config = dict(num_process=mp.cpu_count())
 
     @property
     def num_params(self):
         return len(self.params_vec)
 
-    def generate_data_set(self, n=1, debug=False, parallel_config=None):
+    @property
+    def config(self):
+        return self._config
+
+    @config.setter
+    def config(self, config_params):
+        self._config = config_params
+
+    def generate_data_set(self, n=1, debug=False):
         """
         :param n:
         :return: a list of n Design objects with populated attributes (i.e. cost, specs, id)
@@ -210,36 +214,56 @@ class EvaluationEngine(object):
 
         return valid_designs[:n]
 
-    def evaluate(self, design_list, debug=False, parallel_config=None):
+    def evaluate(self, design_list, debug=False):
         """
         serial implementation of evaluate (not parallel)
         :param design_list:
         :return: a list of processed_results that the algorithm cares about, keywords should include
         cost and spec keywords with one scalar number as the value for each
         """
-        results = []
-        for design in design_list:
-            try:
-                result = self._evaluate(design, parallel_config=parallel_config)
-                result['valid'] = True
-            except Exception as e:
-                if debug:
-                    raise e
-                result = {'valid': False}
-                print(getattr(e, 'message', str(e)))
 
-            results.append(result)
+        results = list()
+        if debug:
+            for design in design_list:
+                results.append(self._main_task(design))
+        else:
+            # parallelization
+            # p = mp.Pool(1)
+            # results = p.map(self._main_task, design_list)
+            t_list = list()
+            queue = mp.Queue()
+            for design in design_list:
+                t = threading.Thread(target=self._main_task, args=(design, queue))
+                t.start()
+                t_list.append(t)
+
+            for t in t_list:
+                if t.is_alive():
+                    t.join()
+            queue.put('stop')
+            results = [x for x  in iter(queue.get, 'stop')]
+
         return results
 
-    def _evaluate(self, design, parallel_config):
+    def _main_task(self, design, queue=None):
+        try:
+            result = self._evaluate(design)
+            result['valid'] = True
+            print(result)
+        except Exception as e:
+            result = {'valid': False, 'message': str(e)}
+
+        if queue:
+            queue.put(result)
+        return result
+
+    def _evaluate(self, design):
         state_dict = dict()
         for i, key in enumerate(self.params_vec.keys()):
             state_dict[key] = self.params_vec[key][design[i]]
-        state = [state_dict]
-        dsn_names = [design.id]
-        results = {}
+        results = dict()
         for netlist_name, netlist_module in self.netlist_module_dict.items():
-            results[netlist_name] = netlist_module.run(state, dsn_names)
+            results[netlist_name] = netlist_module.run(state_dict, design.id)
 
         specs_dict = self.get_specs(results, self.measurement_specs['meas_params'])
         specs_dict['cost'] = self.cost_fun(specs_dict)

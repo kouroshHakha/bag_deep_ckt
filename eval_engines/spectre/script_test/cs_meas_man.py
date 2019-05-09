@@ -11,11 +11,7 @@ class CSMeasMan(EvaluationEngine):
 
 
     def get_specs(self, results_dict, params):
-        specs_dict = dict()
-        ac_dc = results_dict['ac_dc']
-        for _, res, _ in ac_dc:
-            specs_dict = res
-
+        _, specs_dict, _ = results_dict['ac_dc']
         return specs_dict
 
     def compute_penalty(self, spec_nums, spec_kwrd):
@@ -41,7 +37,7 @@ class ACTB(object):
     @classmethod
     def process_ac(cls, results, params):
         ac_result = results['ac']
-        dc_results = results['dcOpc']
+        dc_results = results['dcOp']
 
         vout = ac_result['out']
         freq = ac_result['sweep_values']
@@ -86,5 +82,5 @@ if __name__ == '__main__':
     yname = 'bag_deep_ckt/eval_engines/spectre/specs_test/common_source.yaml'
     eval_core = CSMeasMan(yname)
 
-    designs = eval_core.generate_data_set(n=1)
+    designs = eval_core.generate_data_set(n=4, debug=False)
     pdb.set_trace()
