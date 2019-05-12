@@ -285,7 +285,8 @@ class EvaluationEngine(object):
         :param design_list:
             List of designs
         :param debug:
-            if True exceptions are raised if encountered, otherwise they are ignored
+            if True exceptions are raised if encountered, otherwise they are ignored.
+            Simulations run int series when debug is True.
         :return:
             a list of dictionaries representing specifications
         """
