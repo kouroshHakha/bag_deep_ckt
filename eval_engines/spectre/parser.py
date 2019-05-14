@@ -6,7 +6,7 @@ import libpsf
 import fnmatch
 import pdb
 
-IGNORE_LIST = ['*.info', '*.primitives', '*.subckts']
+IGNORE_LIST = ['*.info', '*.primitives', '*.subckts', 'logFile']
 
 class FileNotCompatible(Exception):
     """
