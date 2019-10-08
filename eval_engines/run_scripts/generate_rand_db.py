@@ -19,6 +19,8 @@ def parse_args() -> Namespace:
                         help='the seed used for generating the data base')
     parser.add_argument('-v', '--verbose', default=False, action='store_true',
                         help='True to make the underlying processes verbose')
+    parser.add_argument('-p', '--processes', default=False, action='store_true',
+                        help='True to make multi-processes enable, default is multi-thread')
     args = parser.parse_args()
     return args
 
@@ -28,9 +30,11 @@ def run_main(args: Namespace):
     with open(args.specs_fname, 'r') as f:
         specs = yaml.load(f, Loader=yaml.Loader)
 
-    kwargs = {}
-    if args.verbose:
-        kwargs['verbose'] = True
+    kwargs = dict(
+        verbose=args.verbose,
+        processes=args.processes,
+    )
+
     eval_engine_str = specs['eval_engine_cls']
     eval_engine_params = specs['eval_engine_params']
     eval_engine_cls = import_cls(eval_engine_str)

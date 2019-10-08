@@ -49,8 +49,6 @@ class BagNetEngineBase(CircuitsEngineBase):
             else:
                 remaining = remaining - len(trying_designs)
 
-            pdb.set_trace()
-
         generator_efficiency = len(valid_designs) / len(tried_designs)
         print(f'Genrator Efficiency: {generator_efficiency}')
         return valid_designs
