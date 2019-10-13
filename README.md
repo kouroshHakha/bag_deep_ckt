@@ -1,4 +1,9 @@
 # bag_deep_ckt
+This repo includes several algorithms for analog circuit design exploration and automation.
+Papers:
+    **BagNet**: [https://arxiv.org/abs/1907.10515]
+    
+# old readme
 genetic and neural net optimization for circuit design
 
 NGspice:
