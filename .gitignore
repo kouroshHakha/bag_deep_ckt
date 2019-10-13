@@ -38,4 +38,4 @@ bag_libs.def
 calibreview.setup
 
 # netlists
-eval_engines/src/eval_engines/circuits/spectre/netlist_templates/*
+blackbox_eval_engine/src/bb_eval_engine/circuits/spectre/netlist_templates/*

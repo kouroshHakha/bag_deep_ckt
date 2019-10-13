@@ -1,7 +1,7 @@
 log_path: 'bag_deep_ckt/log_path/DropOutSampling_vs_Oracle'
 
-circuit_yaml_file: 'bag_deep_ckt/eval_engines/NGspice/ngspice_inputs/yaml_files/two_stage_opamp.yaml'
-eval_core_package: "eval_engines.NGspice.ngspiceEvalEngine"
+circuit_yaml_file: 'bag_deep_ckt/blackbox_eval_engine/NGspice/ngspice_inputs/yaml_files/two_stage_opamp.yaml'
+eval_core_package: "blackbox_eval_engine.NGspice.ngspiceEvalEngine"
 eval_core_class: "NgspiceEvaluationCore"
 
 agent_module_name: deepckt.Agent.DeepCKTAgent

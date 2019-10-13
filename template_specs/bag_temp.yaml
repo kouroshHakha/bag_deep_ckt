@@ -104,7 +104,7 @@ root_dir: 'data/opamp_two_stage'
 summary_fname: 'summary.yaml'
 sim_spec_fname: 'opamp_two_stage_sim.yaml'
 database_dir: 'bag_deep_ckt/checkpoint/db/two_stage_opamp'
-eval_core_package: 'bag_deep_ckt.eval_engines.BAG.opamp_eval'
+eval_core_package: 'bag_deep_ckt.blackbox_eval_engine.BAG.opamp_eval'
 eval_core_class: 'OpampEvaluationEngine'
 
 
