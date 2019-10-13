@@ -1,3 +1,0 @@
-Spectre Examples:
-
-* **Common Source**
