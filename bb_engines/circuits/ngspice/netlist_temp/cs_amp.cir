@@ -22,9 +22,9 @@ vin vg  0   dc=vbias    ac=1
 run
 set wr_vecnames
 option numdgt=7
-wrdata {{ac_path}} vm(vd)
+wrdata {{ac}} vm(vd)
 op
-wrdata {{dc_path}} i(Vdd)
+wrdata {{dc}} i(Vdd)
 .endc
 
 .end

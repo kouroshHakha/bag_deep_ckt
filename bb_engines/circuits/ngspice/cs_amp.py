@@ -11,12 +11,12 @@ import numpy as np
 import scipy.interpolate as interp
 import scipy.optimize as sciopt
 
-from bb_eval_engine.circuits.ngspice.netlist import NgSpiceWrapper, PathLike, StateValue
-from bb_eval_engine.circuits.ngspice.engine import NgspiceEngineBase
-from bb_eval_engine.circuits.ngspice.flow_manager import FlowManager
+from bb_eval_engine.circuits.ngspice.netlist import NgSpiceWrapper, StateValue
+from bb_eval_engine.circuits.ngspice.flow import NgspiceFlowManager
 from bb_eval_engine.util.design import Design
 
-class CsAmpClass(NgSpiceWrapper):
+
+class CsAmpNgspiceWrapper(NgSpiceWrapper):
 
     def translate_result(self, state: Mapping[str, StateValue]) -> Mapping[str, StateValue]:
 
@@ -24,7 +24,6 @@ class CsAmpClass(NgSpiceWrapper):
         freq, vout, ibias = self.parse_output(state)
         bw = self.find_bw(vout, freq)
         gain = self.find_dc_gain(vout)
-
 
         spec = dict(
             bw=bw,
@@ -34,10 +33,11 @@ class CsAmpClass(NgSpiceWrapper):
 
         return spec
 
-    def parse_output(self, state):
+    @classmethod
+    def parse_output(cls, state):
 
-        ac_fname = Path(state['ac_path'])
-        dc_fname = Path(state['dc_path'])
+        ac_fname = Path(state['ac'])
+        dc_fname = Path(state['dc'])
 
         if not ac_fname.is_file():
             print(f"ac file doesn't exist: {ac_fname}")
@@ -52,15 +52,17 @@ class CsAmpClass(NgSpiceWrapper):
 
         return freq, vout, ibias
 
-    def find_dc_gain (self, vout):
+    @classmethod
+    def find_dc_gain(cls, vout):
         return np.abs(vout)[0]
 
-    def find_bw(self, vout, freq):
+    @classmethod
+    def find_bw(cls, vout, freq):
         gain = np.abs(vout)
         gain_3dB = gain[0] / np.sqrt(2)
-        return self._get_best_crossing(freq, gain, gain_3dB)
+        return cls._get_best_crossing(freq, gain, gain_3dB)
 
-
+    @classmethod
     def _get_best_crossing(cls, xvec, yvec, val):
         interp_fun = interp.InterpolatedUnivariateSpline(xvec, yvec)
 
@@ -77,36 +79,17 @@ class CsAmpClass(NgSpiceWrapper):
             return xstop
 
 
+class CSAmpFlow(NgspiceFlowManager):
 
-class CSAmpFlow(FlowManager):
+    def interpret(self, design: Design, *args, **kwargs) -> Mapping[str, Any]:
+        params_dict = design['value_dict']
+        params_dict.update(self.update_netlist_model_paths(design, ['ac', 'dc'], name='ac_dc'))
 
-    def __init__(self, netlist, **kwargs):
+        return params_dict
 
-        num_process = kwargs.get('num_workers', 1)
-        print(num_process)
-        self.verbose = kwargs.get('verbose', False)
-        self.ngspice_wrapper = CsAmpClass(num_process, netlist)
-
-
-    def batch_evaluate(self, batch_of_designs: Sequence[Mapping[str, Any]], *args, **kwargs):
-
-        raw_results = self.ngspice_wrapper.run(batch_of_designs, verbose=self.verbose)
+    def batch_evaluate(self, batch_of_designs: Sequence[Design], *args, **kwargs):
+        interpreted_designs = [self.interpret(design) for design in batch_of_designs]
+        raw_results = self.ngspice_lut['ac_dc'].run(interpreted_designs, verbose=self.verbose)
         results = [res[1] for res in raw_results]
 
         return results
-
-
-class CSAmpEvalEngine(NgspiceEngineBase):
-
-    def interpret(self, design: Design):
-        # keep the default
-        params_dict = NgspiceEngineBase.interpret(self, design)
-        netlist_path = Path(__file__).parent / 'netlist_temp' / 'ngspice_models' / '45nm_bulk.txt'
-        wrapper = self.flow_manager.ngspice_wrapper
-        id = design.id(self.id_encoder)
-        params_dict['ac_path'] = str(wrapper.get_design_folder(id) / 'ac.csv')
-        params_dict['dc_path'] = str(wrapper.get_design_folder(id) / 'dc.csv')
-        params_dict['include'] = netlist_path.resolve()
-        params_dict['id'] = id
-
-        return params_dict
