@@ -1,0 +1,39 @@
+bb_engine: bb_eval_engine.circuits.base.CircuitsEngineBase
+bb_engine_params:
+  flow_manager_cls: bb_engines.circuits.ngspice.two_stage.TwoStageFlow
+  flow_manager_params:
+    feedback_factor: !!float 1.0
+    tot_err:  !!float 0.01
+    ngspice_config:
+      ol:
+        ngspice_cls: bb_engines.circuits.ngspice.two_stage.TwoStageOpenLoop
+        netlist: bag_deep_ckt/bb_engines/circuits/ngspice/netlist_temp/two_stage_full/two_stage_ol.cir
+      cm:
+        ngspice_cls: bb_engines.circuits.ngspice.two_stage.TwoStageCommonModeGain
+        netlist: bag_deep_ckt/bb_engines/circuits/ngspice/netlist_temp/two_stage_full/two_stage_cm.cir
+      ps:
+        ngspice_cls: bb_engines.circuits.ngspice.two_stage.TwoStagePowerSupplyGain
+        netlist: bag_deep_ckt/bb_engines/circuits/ngspice/netlist_temp/two_stage_full/two_stage_ps.cir
+      tran:
+        ngspice_cls: bb_engines.circuits.ngspice.two_stage.TwoStageTransient
+        netlist: bag_deep_ckt/bb_engines/circuits/ngspice/netlist_temp/two_stage_full/two_stage_tran.cir
+
+  params:
+    mp1:  !!python/tuple [1, 100, 1]
+    mn1:  !!python/tuple [1, 100, 1]
+    mp3:  !!python/tuple [1, 100, 1]
+    mn3:  !!python/tuple [1, 100, 1]
+    mn4:  !!python/tuple [1, 100, 1]
+    mn5:  !!python/tuple [1, 100, 1]
+    cc:   !!python/tuple [!!float 0.1e-12, !!float 10.0e-12, !!float 0.1e-12]
+
+
+  spec_range:
+    gain: [!!float 300.0, null, 1]
+    ugbw: [!!float 10.0e6, null, 1] #Hz
+    pm: [!!float 60.0, null, 1]
+    tset: [null, !!float 90.0e-9, 1] #Seconds
+    psrr: [!!float 50.0, null, 1] #db
+    cmrr: [!!float 50.0, null, 1] #db
+    offset_sys: [null, !!float 1.0e-3, 1] #Volts
+    ibias: [null, !!float 0.2e-3, 1] #Amper

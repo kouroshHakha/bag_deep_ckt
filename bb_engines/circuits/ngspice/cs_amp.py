@@ -1,5 +1,5 @@
 """
-This is an example of using ngspice.netlist.NgSpiceWrapper for a cs_amp ac and dc simulation.
+This is an example of using blackbox_eval_engine setup for a cs_amp ac and dc simulation.
 Look at the cs_amp.cir as well to understand the parser.
 The parsing happens here depending on the format of netlist Template.
 """
