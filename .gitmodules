@@ -1,0 +1,3 @@
+[submodule "gacem"]
+	path = gacem
+	url = https://github.com/kouroshHakha/gacem.git
