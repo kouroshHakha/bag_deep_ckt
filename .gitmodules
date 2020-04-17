@@ -1,3 +1,9 @@
+[submodule "blackbox_eval_engine"]
+	path = blackbox_eval_engine
+	url = git@github.com:kouroshHakha/blackbox_eval_engine.git
+[submodule "efficient_ga"]
+	path = efficient_ga
+	url = git@github.com:kouroshHakha/efficient_ga.git
 [submodule "gacem"]
 	path = gacem
 	url = https://github.com/kouroshHakha/gacem.git
