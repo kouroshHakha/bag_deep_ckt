@@ -1,0 +1,95 @@
+database_dir: "bag_deep_ckt/checkpoint/db/folded_cascode_spectre"
+
+measurement:
+  meas_params: {} # high level measurement params go here for post process
+  testbenches:
+    ac_dc:
+      netlist_template: "/tools/projects/ksettaluri6/BAG2_TSMC16FFC_tutorial/bag_deep_ckt/eval_engines/spectre/netlist_templates/folded_cascode_high_gain_ac.scs"
+      tb_module: "bag_deep_ckt.eval_engines.spectre.script_test.fc_meas_man"
+      tb_class: "ACTB"
+      post_process_function: "process_ac" # a class method defined in meas manager
+      tb_params: {} # lower level params for tb evaluation goes here
+    tr_ss:
+      netlist_template: "/tools/projects/ksettaluri6/BAG2_TSMC16FFC_tutorial/bag_deep_ckt/eval_engines/spectre/netlist_templates/folded_cascode_high_gain_tran.scs"
+      tb_module: "bag_deep_ckt.eval_engines.spectre.script_test.fc_meas_man"
+      tb_class: "TRTBSS"
+      post_process_function: "process_tr_ss"
+      tb_params: {}
+    tr_swing:
+      netlist_template: "/tools/projects/ksettaluri6/BAG2_TSMC16FFC_tutorial/bag_deep_ckt/eval_engines/spectre/netlist_templates/folded_cascode_high_gain_swing.scs"
+      tb_module: "bag_deep_ckt.eval_engines.spectre.script_test.fc_meas_man"
+      tb_class: "TRTBSWING"
+      post_process_function: "process_tr_swing"
+      tb_params: {}
+    noise:
+      netlist_template: "/tools/projects/ksettaluri6/BAG2_TSMC16FFC_tutorial/bag_deep_ckt/eval_engines/spectre/netlist_templates/folded_cascode_high_gain_noise.scs"
+      tb_module: "bag_deep_ckt.eval_engines.spectre.script_test.fc_meas_man"
+      tb_class: "TRTBNOISE"
+      post_process_function: "process_tr_noise"
+      tb_params: {}
+
+#original: [2,20,2.0]
+params:
+  _gpar0: !!python/tuple [8.0,30.0,2.0]
+  #rload: !!python/tuple [20.0,50.0,2.0]
+  cload: !!python/tuple [8.0e-15,30.0e-15,2.0e-15]
+  cc: !!python/tuple [2.0e-15,24.0e-15,2.0e-15]
+  pbot: !!python/tuple [16.0,38.0,2.0]
+  pmid: !!python/tuple [8.0,30.0,2.0]
+  nbot: !!python/tuple [2.0,24.0,2.0]
+  nmid: !!python/tuple [2.0,24.0,2.0]
+  m: !!python/tuple [1, 12, 1]
+  outn: !!python/tuple [16.0,38.0,2.0]
+  outp: !!python/tuple [16.0,38.0,2.0]
+  x15: !!python/tuple [2.0,24.0,2.0]
+  xmb7: !!python/tuple [2.0,24.0,2.0]
+  x14: !!python/tuple [2.0,24.0,2.0]
+  xmb16: !!python/tuple [2.0,24.0,2.0]
+  xcm4: !!python/tuple [2.0,24.0,2.0]
+  x17: !!python/tuple [2.0,24.0,2.0]
+  xmb14: !!python/tuple [2.0,24.0,2.0]
+  xmb15: !!python/tuple [16.0,38.0,2.0]
+  xmb19: !!python/tuple [16.0,38.0,2.0]
+  xmb20: !!python/tuple [16.0,38.0,2.0]
+  xmb9: !!python/tuple [2.0,24.0,2.0]
+  x16: !!python/tuple [2.0,24.0,2]
+  xcm2: !!python/tuple [2.0,24.0,2.0]
+  xcm1: !!python/tuple [2.0,24.0,2.0]
+  xcm3: !!python/tuple [2.0, 24.0, 2.0]
+  x18: !!python/tuple [2.0, 24.0, 2.0]
+  idc: !!python/tuple [!!float 30.0e-6, !!float 52.0e-6, !!float 2.0e-6]
+  rc: !!python/tuple [500,1600,100]
+
+spec_range:
+  gain: [!!float 1, null, 1]
+  funity: [!!float 300.0e+6, null, 1]
+  pm: [60.0, null, 1]
+
+#normalize: !!python/tuple [10.0e+8,500,75.0,100,1.0e-7,1.0]
+normalize:
+  gain: 500
+  funity: 10.0e+8
+  pm: 75.0
+  tset: 1.0e-9
+  swing: 1.0
+  noise: 500.0e-6
+  power: 500.0e-6
+#normalize: !!python/tuple [10.0e+8,500,75.0, 100, 1.0]
+
+target_spec:
+  gain: !!python/tuple [500,1000] 
+  funity: !!python/tuple [!!float 10.0e+6, !!float 10.0e+6]
+  pm: !!python/tuple [70,70]
+  tset: !!python/tuple [!!float 100.0e-9, !!float 10.0e-9]
+  swing: !!python/tuple [0.5,0.5]
+  noise: !!python/tuple [200.0e-6, 200.0e-6]
+  power: !!python/tuple [100.0e-6, 100.0e-6]
+
+specs_sweep:
+  gain: !!python/tuple [500, 1800]
+  funity: !!python/tuple [!!float 10.0e+6, !!float 1.0e+8]
+  pm: [60.0, 70.0]
+  tset: [!!float 50.0e-9, !!float 100.0e-9]
+  swing: [0.9,1.0]
+  noise: !!python/tuple [150.0e-6,500.0e-6]  
+  power: !!python/tuple [100.0e-6, 500.0e-6]

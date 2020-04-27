@@ -1,0 +1,89 @@
+database_dir: "bag_deep_ckt/checkpoint/db/folded_cascode_spectre"
+
+measurement:
+  meas_params: {} # high level measurement params go here for post process
+  testbenches:
+    ac_dc:
+      netlist_template: "/tools/projects/ksettaluri6/BAG2_TSMC16FFC_tutorial/bag_deep_ckt/eval_engines/spectre/netlist_templates/fc_with_biasing_fixed_ac.scs"
+      tb_module: "bag_deep_ckt.eval_engines.spectre.script_test.fc_meas_man"
+      tb_class: "ACTB"
+      post_process_function: "process_ac" # a class method defined in meas manager
+      tb_params: {} # lower level params for tb evaluation goes here
+    tr_ss:
+      netlist_template: "/tools/projects/ksettaluri6/BAG2_TSMC16FFC_tutorial/bag_deep_ckt/eval_engines/spectre/netlist_templates/fc_with_biasing_fixed_tr_ss.scs"
+      tb_module: "bag_deep_ckt.eval_engines.spectre.script_test.fc_meas_man"
+      tb_class: "TRTBSS"
+      post_process_function: "process_tr_ss"
+      tb_params: {}
+    tr_swing:
+      netlist_template: "/tools/projects/ksettaluri6/BAG2_TSMC16FFC_tutorial/bag_deep_ckt/eval_engines/spectre/netlist_templates/fc_with_biasing_fixed_tr_swing.scs"
+      tb_module: "bag_deep_ckt.eval_engines.spectre.script_test.fc_meas_man"
+      tb_class: "TRTBSWING"
+      post_process_function: "process_tr_swing"
+      tb_params: {}
+
+#original: [2,20,2.0]
+params:
+  in: !!python/tuple [20.0,50.0,2.0]
+  tail1: !!python/tuple [20.0,50.0,2.0]
+  tail2: !!python/tuple [20.0,50.0,2.0]
+  cascp1: !!python/tuple [20.0,50.0,2.0]
+  cascp2: !!python/tuple [20.0,50.0,2.0]
+  cascn1: !!python/tuple [20.0,50.0,2.0]
+  cascn2: !!python/tuple [20.0,50.0,2.0]
+  outn: !!python/tuple [20.0,50.0,2.0]
+  outp: !!python/tuple [20.0,50.0,2.0]
+  rfb: !!python/tuple [100.0, 6000.0, 500.0]
+  cfb: !!python/tuple [!!float 1.0e-15, !!float 150.0e-15, !!float 5.0e-15]
+  mb1: !!python/tuple [20.0,50.0,2.0]
+  mb3: !!python/tuple [20.0,50.0,2.0]
+  mb5: !!python/tuple [20.0,50.0,2.0]
+  mb9: !!python/tuple [20.0,50.0,2.0]
+  mb10: !!python/tuple [20.0,50.0,2.0]
+  mb14: !!python/tuple [20.0,50.0,2.0]
+  mb15: !!python/tuple [20.0,50.0,2.0]
+  mb16: !!python/tuple [20.0,50.0,2.0]
+  mb17: !!python/tuple [20.0,50.0,2.0]
+  mb18: !!python/tuple [20.0,50.0,2.0]
+  k1: !!python/tuple [1.0,10.0,0.5]
+  k2: !!python/tuple [1.0,10.0,0.5]
+  k3: !!python/tuple [1.0,10.0,0.5]
+  k4: !!python/tuple [1.0,10.0,0.5]
+  k5: !!python/tuple [1.0,10.0,0.5]
+  m2: !!python/tuple [1.0,10.0,0.5]
+  idc: !!python/tuple [!!float 30.0e-6, !!float 60.0e-6, !!float 2.0e-6]
+  gvcm: !!python/tuple [!!float 1.0, 10.0, !!float 1.0]
+
+spec_range:
+  gain: [!!float 1, null, 1]
+  funity: [!!float 300.0e+6, null, 1]
+  pm: [60.0, null, 1]
+
+#normalize: !!python/tuple [10.0e+8,500,75.0,100,1.0e-7,1.0]
+normalize:
+  gain: 500
+  funity: 10.0e+8
+  pm: 75.0
+  tset: 1.0e-9
+  swing: 1.0
+#normalize: !!python/tuple [10.0e+8,500,75.0, 100, 1.0]
+
+target_spec:
+  #gain: !!python/tuple [200,200]
+  gain: !!python/tuple [500,1000] 
+  funity: !!python/tuple [!!float 10.0e+6, !!float 10.0e+6]
+  #funity: !!python/tuple [!!float 1.0e+10, !!float 1.0e+10]
+  pm: !!python/tuple [70,70]
+  tset: !!python/tuple [!!float 100.0e-9, !!float 10.0e-9]
+  #sr: !!python/tuple [100, 100]
+  swing: !!python/tuple [0.5,0.5]
+
+specs_sweep:
+  #gain: !!python/tuple [5, 250]
+  gain: !!python/tuple [500, 15000]
+  #funity: !!python/tuple [!!float 100.0e+6, !!float 10.0e+8]
+  funity: !!python/tuple [!!float 10.0e+6, !!float 1.0e+8]
+  pm: [60.0, 70.0]
+  tset: [!!float 50.0e-9, !!float 100.0e-9]
+  #sr: [4, 100]
+  swing: [0.9,1.0]
