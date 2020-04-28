@@ -9,11 +9,12 @@ import yaml
 import importlib
 import random
 import numpy as np
-from eval_engines.util.core import IDEncoder, Design
-from eval_engines.spectre.parser import SpectreParser
+from bag_deep_ckt.eval_engines.util.core import IDEncoder, Design
+from bag_deep_ckt.eval_engines.spectre.parser import SpectreParser
+import IPython
+import random
 
-
-debug = False
+debug = False 
 
 def get_config_info():
     # TODO
@@ -54,7 +55,7 @@ class SpectreWrapper(object):
         self.num_process = self.config_info.get('NUM_PROCESS', 1)
 
         _, dsn_netlist_fname = os.path.split(netlist_loc)
-        self.base_design_name = os.path.splitext(dsn_netlist_fname)[0]
+        self.base_design_name = os.path.splitext(dsn_netlist_fname)[0] + str(random.randint(0,10000))
         self.gen_dir = os.path.join(self.root_dir, "designs_" + self.base_design_name)
 
         os.makedirs(self.gen_dir, exist_ok=True)
@@ -76,7 +77,7 @@ class SpectreWrapper(object):
 
     def _create_design(self, state, new_fname):
         output = self.template.render(**state)
-        design_folder = os.path.join(self.gen_dir, new_fname)
+        design_folder = os.path.join(self.gen_dir, new_fname)#+str(random.randint(0,10000))
         os.makedirs(design_folder, exist_ok=True)
         fpath = os.path.join(design_folder, new_fname + '.scs')
         with open(fpath, 'w') as f:
@@ -85,20 +86,92 @@ class SpectreWrapper(object):
         return design_folder, fpath
 
     def _simulate(self, fpath):
-        command = ['spectre', '%s'%fpath, '-format', 'psfbin' ,'> /dev/null 2>&1']
+        command = 'spectre','%s'%fpath,'-format','psfbin','> /dev/null 2>&1'
         log_file = os.path.join(os.path.dirname(fpath), 'log.txt')
         err_file = os.path.join(os.path.dirname(fpath), 'err_log.txt')
-        exit_code = subprocess.call(command, cwd=os.path.dirname(fpath),
-                                    stdout=open(log_file, 'w'), stderr=open(err_file, 'w'))
+
+        with open(log_file, 'w') as file1, open(err_file,'w') as file2:
+          #exit_code = subprocess.call(command, cwd=os.path.dirname(fpath), stdout=file1, stderr=file2)
+          process = subprocess.Popen(command, cwd=os.path.dirname(fpath), stdout=file1, stderr=file2)
+          process.wait()
+          process.kill()
+
+        #exit_code = os.system(command)
         info = 0
         if debug:
             print(command)
             print(fpath)
-        if (exit_code % 256):
-            info = 1 # this means an error has occurred
+        #if (exit_code % 256):
+        #    info = 1 # this means an error has occurred
 
         return info
 
+    def constraints(self,state):
+      const_state = {}
+      #translate values for the folded cascode
+      const_state['in'] = state['in']
+      const_state['tail1'] = state['tail1']
+      const_state['tail2'] = state['tail2']
+      const_state['cascp1'] = state['cascp1']
+      const_state['cascp2'] = state['cascp2']
+      const_state['cascn1'] = state['cascn1']
+      const_state['cascn2'] = state['cascn2']
+      const_state['outn'] = state['outn']
+      const_state['outp'] = state['outp']
+      const_state['rfb'] = state['rfb']
+      const_state['cfb'] = state['cfb']
+      const_state['gvcm'] = state['gvcm']
+
+      #translate and add constraints for the biasing
+      const_state['mb1'] = state['mb1']
+      const_state['mb2'] = state['k1']*state['mb1'] 
+      const_state['mb3'] = state['mb3']
+      const_state['mb4'] = state['k1']*state['mb1'] 
+      const_state['mb5'] = state['mb5']
+      const_state['mb6'] = state['k4']*state['mb5'] 
+      const_state['mb7'] = state['m2']*state['mb5'] 
+      const_state['mb8'] = state['m2']*state['k4']*state['mb5']
+      const_state['mb9'] = state['mb9']
+      const_state['mb10'] = state['mb10']
+      const_state['mb12'] = state['k5']*state['mb5'] 
+      const_state['mb13'] = state['m2']*state['k5']*state['mb5'] 
+      const_state['mb14'] = state['mb14']
+      const_state['mb15'] = state['mb15']
+      const_state['mb16'] = state['mb16']
+      const_state['mb17'] = state['mb17']
+      const_state['mb18'] = state['mb18']
+      const_state['mb19'] = state['k2']*state['mb1'] 
+      const_state['mb20'] = state['k2']*state['mb3']
+      const_state['idc'] = state['idc']
+      #const_state['mb2'] = state['k1']*state['mb1']
+      #const_state['mb3'] = state['m1']*state['mb1']
+      #const_state['mb4'] = state['k1']*#const_state['mb3']
+      #const_state['mb5'] = state['cascp1'] 
+      #const_state['mb6'] = state['k4']*#const_state['mb5'] 
+      #const_state['mb7'] = state['m2']*state['mb5']  
+      #const_state['mb8'] = state['m2']*state['k4']*state['mb5']
+      #const_state['mb9'] = state['cascn1']
+      #const_state['mb10'] = state['cascn2'] 
+      #const_state['mb12'] = state['k5']*state['mb5'] 
+      #const_state['mb13'] = state['k4']*#const_state['mb7'] 
+      #const_state['mb14'] = state['cascn1']
+      #const_state['mb15'] = state['cascn2']
+      #const_state['mb16'] = state['outp']   
+      #const_state['mb19'] = state['k2']*state['mb1']
+      #const_state['mb20'] = state['k2']*#const_state['mb3']
+      #const_state['idc'] = state['idc']
+      #const_state['in'] = state['in']
+      #const_state['tail1'] = state['tail1']
+      #const_state['tail2'] = state['tail2']
+      #const_state['cascp1'] = state['cascp1']
+      #const_state['cascp2'] = state['cascp2']
+      #const_state['cascn1'] = state['cascn1']
+      #const_state['cascn2'] = state['cascn2']
+      #const_state['outn'] = state['outn']
+      #const_state['outp'] = state['outp']
+      #const_state['rfb'] = state['rfb']
+      #const_state['cfb'] = state['cfb']
+      return const_state
 
     def _create_design_and_simulate(self, state, dsn_name=None, verbose=False):
         if debug:
@@ -110,6 +183,16 @@ class SpectreWrapper(object):
             dsn_name = str(dsn_name)
         if verbose:
             print(dsn_name)
+        #add additional width metrics to 45nm netlist
+        if "45nm" in dsn_name:
+          wdict = {}
+          for each_param in state:
+            if not("cc" in each_param):
+              wdict['w'+each_param] = state[each_param]*654e-9
+          state.update(wdict)
+
+        #add constraints to biasing
+        #state = self.constraints(state)
         design_folder, fpath = self._create_design(state, dsn_name)
         info = self._simulate(fpath)
         results = self._parse_result(design_folder)
@@ -121,8 +204,23 @@ class SpectreWrapper(object):
 
     def _parse_result(self, design_folder):
         _, folder_name = os.path.split(design_folder)
+        #print(design_folder)
+        #mod_folder_name = ''.join([i for i in folder_name if not i.isdigit()])
         raw_folder = os.path.join(design_folder, '{}.raw'.format(folder_name))
         res = SpectreParser.parse(raw_folder)
+        #IPython.embed()
+        ##print(os.system("ls -l " + os.path.join("/proc",str(os.getpid()),"fd")))
+        for fd in os.listdir(os.path.join("/proc", str(os.getpid()), "fd")):
+          if os.path.islink(os.path.join("/proc",str(os.getpid()),"fd",fd)):
+            if "folded_cascode" in os.readlink(os.path.join("/proc",str(os.getpid()),"fd",fd)):
+              os.close(int(fd))
+        #IPython.embed()
+        #    if int(fd) == 16:
+        #      os.close(int(fd))
+
+        #onlyfiles = [f for f in os.listdir(raw_folder) if os.path.isfile(os.path.join(raw_folder, f))]
+        #for file in os.listdir(raw_folder):
+        #  os.remove(os.path.join(raw_folder, file))
         return res
 
     def run(self, states, design_names=None, verbose=False):
@@ -150,7 +248,7 @@ class EvaluationEngine(object):
         with open(yaml_fname, 'r') as f:
             self.ver_specs = yaml.load(f)
 
-        self.spec_range = self.ver_specs['spec_range']
+        #self.spec_range = self.ver_specs['spec_range']
         # params are interfaced using the index instead of the actual value
         params = self.ver_specs['params']
 
@@ -185,6 +283,7 @@ class EvaluationEngine(object):
         :return: a list of n Design objects with populated attributes (i.e. cost, specs, id)
         """
         valid_designs, tried_designs = [], []
+        nvalid_designs = 0 
 
         useless_iter_count = 0
         while len(valid_designs) < n:
@@ -205,9 +304,11 @@ class EvaluationEngine(object):
                 for key in design.specs.keys():
                     design.specs[key] = design_result[key]
                 valid_designs.append(design)
+            else:
+                nvalid_designs += 1
             tried_designs.append(design)
             print(len(valid_designs))
-
+            print("not valid designs:" + str(nvalid_designs))
         return valid_designs[:n]
 
     def evaluate(self, design_list, debug=False, parallel_config=None):
@@ -218,17 +319,52 @@ class EvaluationEngine(object):
         cost and spec keywords with one scalar number as the value for each
         """
         results = []
-        for design in design_list:
-            try:
-                result = self._evaluate(design, parallel_config=parallel_config)
-                result['valid'] = True
-            except Exception as e:
-                if debug:
-                    raise e
-                result = {'valid': False}
-                print(getattr(e, 'message', str(e)))
+        if len(design_list) > 1:
+          for design in design_list:
+              try:
+                  result = self._evaluate(design, parallel_config=parallel_config)
+                  #result['valid'] = True
+              except Exception as e:
+                  if debug:
+                      raise e
+                  result = {'valid': False}
+                  print(getattr(e, 'message', str(e)))
 
-            results.append(result)
+              results.append(result)
+        else:
+          try:
+            results = {}
+            for netlist_name, netlist_module in sorted(self.netlist_module_dict.items()):
+              if netlist_name == 'tr_ss':
+                if results['ac_dc'][1]['gain'] < 1.0:
+                  results[netlist_name] = {}
+                  results[netlist_name][1] = {}
+                  results[netlist_name][1]['tset'] = 5.0e-7
+                else:
+                  results[netlist_name] = netlist_module._create_design_and_simulate(design_list[0], dsn_name=netlist_name)
+              elif netlist_name == 'tr_swing':
+                if results['ac_dc'][1]['gain'] < 1.0:
+                  results[netlist_name] = {}
+                  results[netlist_name][1] = {}
+                  results[netlist_name][1]['vswing'] = 1.0e-3
+                else:
+                  results[netlist_name] = netlist_module._create_design_and_simulate(design_list[0], dsn_name=netlist_name)
+              elif netlist_name == 'power':
+                if results['ac_dc'][1]['gain'] < 1.0:
+                  results[netlist_name] = {}
+                  results[netlist_name][1] = {}
+                  results[netlist_name][1]['noise'] = 1000.0e-6
+                else:
+                  results[netlist_name] = netlist_module._create_design_and_simulate(design_list[0], dsn_name=netlist_name)
+
+              else:
+                results[netlist_name] = netlist_module._create_design_and_simulate(design_list[0], dsn_name=netlist_name)
+          except Exception as e:
+            if debug:
+              raise e
+            result = {'valid': False}
+            print(getattr(e, 'message', str(e)))
+          #results.append(result)
         return results
 
     def _evaluate(self, design, parallel_config):
@@ -237,11 +373,14 @@ class EvaluationEngine(object):
             state_dict[key] = self.params_vec[key][design[i]]
         state = [state_dict]
         dsn_names = [design.id]
+        print(state_dict)
         results = {}
         for netlist_name, netlist_module in self.netlist_module_dict.items():
-            results[netlist_name] = netlist_module.run(state, dsn_names)
+            IPython.embed()
+            results[netlist_name] = netlist_module.create_design_and_simulate(state, dsn_names)
 
         specs_dict = self.get_specs(results, self.measurement_specs['meas_params'])
+        print(specs_dict)
         specs_dict['cost'] = self.cost_fun(specs_dict)
         return specs_dict
 
@@ -282,12 +421,14 @@ class EvaluationEngine(object):
         # use self.spec_range[spec_kwrd] to get the min, max, and weight
         raise NotImplementedError
 
-def __main__:
+def main():
   #testing the cs amp functionality with Jinja2
   dsn_netlist = 'bag_deep_ckt/eval_engines/spectre/netlist_templates/two_stage_opamp_16nm.scs'
-  opamp_env = SpectreWrapper(netlist_loc=dsn_netlist)
+  opamp_env = SpectreWrapper(tb_dict=dsn_netlist)
 
-  IPython.embed()
+  w = 654e-9
   state = {"tail1":2, "tail2":4, "tailcm":0.5, "in":1000, "ref":1.0, "diode1":1.0, "ngm1":2.0, "diode2":2.0, "ngm2":2.0, "rfb":100, "cfb":10.0e-15}
   opamp_env._create_design_and_simulate(state)
 
+if __name__=="__main__":
+  main()
