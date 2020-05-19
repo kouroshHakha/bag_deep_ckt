@@ -1,2 +1,3 @@
 # bag_deep_ckt
-For the latest Release checkout branch `bagnet_ngspice_release`.
+For ICCAD and DAC paper results we have released this independent repository for ngspice examples. 
+https://github.com/kouroshHakha/bagnet_ngspice
