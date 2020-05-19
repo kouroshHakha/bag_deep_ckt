@@ -1,4 +1,7 @@
 # bag_deep_ckt
+
+Deprecated Repo, please visit https://github.com/kouroshHakha/bagnet_ngspice instead.
+
 This repo includes several algorithms for analog circuit design exploration and automation.
 Papers:
     **BagNet**: [https://arxiv.org/abs/1907.10515]
